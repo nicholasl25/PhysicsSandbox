@@ -9,30 +9,31 @@ import java.awt.event.KeyEvent;
  * Handles user input for adding planets and point masses.
  */
 public class ControlPanel extends JPanel {
-    // Planet fields
-    private JTextField planetMassField, planetRadiusField, planetVxField, planetVyField;
-    private JComboBox<String> planetColorCombo;
-    
-    // PointMass fields
-    private JTextField pointMassField, pointMassRadiusField;
-    private JComboBox<String> pointMassColorCombo;
+    // Input fields
+    private JTextField massField, radiusField, vxField, vyField;
+    private JComboBox<String> colorCombo;
+    private JSlider gravitySlider;
     
     // Callbacks
     private Runnable onAddPlanet;
-    private Runnable onAddPointMass;
+    private Runnable onAddStationaryMass;
     private Runnable onClearSimulation;
+    private java.util.function.Consumer<Double> onGravityChanged;
     
     /**
      * Creates a new control panel with the specified callbacks.
      * 
      * @param onAddPlanet Called when "Add Planet" button is clicked
-     * @param onAddPointMass Called when "Add Point Mass" button is clicked
+     * @param onAddStationaryMass Called when "Add Stationary Mass" button is clicked
      * @param onClearSimulation Called when "Clear Simulation" button is clicked
+     * @param onGravityChanged Called when gravity slider changes
      */
-    public ControlPanel(Runnable onAddPlanet, Runnable onAddPointMass, Runnable onClearSimulation) {
+    public ControlPanel(Runnable onAddPlanet, Runnable onAddStationaryMass, Runnable onClearSimulation, 
+                       java.util.function.Consumer<Double> onGravityChanged) {
         this.onAddPlanet = onAddPlanet;
-        this.onAddPointMass = onAddPointMass;
+        this.onAddStationaryMass = onAddStationaryMass;
         this.onClearSimulation = onClearSimulation;
+        this.onGravityChanged = onGravityChanged;
         
         setupPanel();
     }
@@ -41,40 +42,33 @@ public class ControlPanel extends JPanel {
      * Sets up the control panel UI.
      */
     private void setupPanel() {
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        setLayout(new BorderLayout());
         setBackground(new Color(50, 50, 50));
         
         // Set preferred width
         setPreferredSize(new Dimension(280, 0));
         
-        // Create a titled border with white title and padding
-        javax.swing.border.TitledBorder border = BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(Color.GRAY), 
-            "User Controls"
-        );
-        border.setTitleColor(Color.WHITE);
-        setBorder(BorderFactory.createCompoundBorder(
-            border,
-            BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        ));
-        
-        // Create tabbed pane
+        // Create tabbed pane for Add and Settings
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.setBackground(new Color(50, 50, 50));
         tabbedPane.setForeground(Color.WHITE);
         
-        // Create Planet tab panel
-        JPanel planetPanel = createPlanetPanel();
-        tabbedPane.addTab("Planets", planetPanel);
+        // Add tab
+        JPanel addPanel = createAddPanel();
+        tabbedPane.addTab("Add", addPanel);
         
-        // Create PointMass tab panel
-        JPanel pointMassPanel = createPointMassPanel();
-        tabbedPane.addTab("PointMasses", pointMassPanel);
+        // Settings tab
+        JPanel settingsPanel = createSettingsPanel();
+        tabbedPane.addTab("Settings", settingsPanel);
         
-        add(tabbedPane);
-        add(Box.createVerticalStrut(10));
+        add(tabbedPane, BorderLayout.CENTER);
         
-        // Clear simulation button (outside tabs)
+        // Clear button at bottom
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.Y_AXIS));
+        bottomPanel.setBackground(new Color(50, 50, 50));
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
         JButton clearSimulationButton = new JButton("Clear Simulation");
         clearSimulationButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, clearSimulationButton.getPreferredSize().height));
         clearSimulationButton.setForeground(Color.RED);
@@ -83,67 +77,66 @@ public class ControlPanel extends JPanel {
                 onClearSimulation.run();
             }
         });
-        // Remove spacebar activation from button
         removeSpacebarActivation(clearSimulationButton);
-        add(clearSimulationButton);
+        bottomPanel.add(clearSimulationButton);
         
-        // Add flexible space at bottom
-        add(Box.createVerticalGlue());
+        add(bottomPanel, BorderLayout.SOUTH);
     }
     
     /**
-     * Creates the panel for Planet controls.
+     * Creates the Add panel.
      */
-    private JPanel createPlanetPanel() {
+    private JPanel createAddPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBackground(new Color(50, 50, 50));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
-        // Mass field
+        // Mass
         JLabel massLabel = new JLabel("Mass:");
         massLabel.setForeground(Color.WHITE);
         panel.add(massLabel);
-        planetMassField = new JTextField("50.0");
-        planetMassField.setMaximumSize(new Dimension(Integer.MAX_VALUE, planetMassField.getPreferredSize().height));
-        panel.add(planetMassField);
+        massField = new JTextField("50.0");
+        massField.setMaximumSize(new Dimension(Integer.MAX_VALUE, massField.getPreferredSize().height));
+        panel.add(massField);
         panel.add(Box.createVerticalStrut(5));
         
-        // Radius field
+        // Radius
         JLabel radiusLabel = new JLabel("Radius:");
         radiusLabel.setForeground(Color.WHITE);
         panel.add(radiusLabel);
-        planetRadiusField = new JTextField("10.0");
-        planetRadiusField.setMaximumSize(new Dimension(Integer.MAX_VALUE, planetRadiusField.getPreferredSize().height));
-        panel.add(planetRadiusField);
+        radiusField = new JTextField("10.0");
+        radiusField.setMaximumSize(new Dimension(Integer.MAX_VALUE, radiusField.getPreferredSize().height));
+        panel.add(radiusField);
         panel.add(Box.createVerticalStrut(5));
         
-        // Velocity fields
+        // VX
         JLabel vxLabel = new JLabel("VX:");
         vxLabel.setForeground(Color.WHITE);
         panel.add(vxLabel);
-        planetVxField = new JTextField("0.0");
-        planetVxField.setMaximumSize(new Dimension(Integer.MAX_VALUE, planetVxField.getPreferredSize().height));
-        panel.add(planetVxField);
+        vxField = new JTextField("0.0");
+        vxField.setMaximumSize(new Dimension(Integer.MAX_VALUE, vxField.getPreferredSize().height));
+        panel.add(vxField);
         panel.add(Box.createVerticalStrut(5));
         
+        // VY
         JLabel vyLabel = new JLabel("VY:");
         vyLabel.setForeground(Color.WHITE);
         panel.add(vyLabel);
-        planetVyField = new JTextField("0.0");
-        planetVyField.setMaximumSize(new Dimension(Integer.MAX_VALUE, planetVyField.getPreferredSize().height));
-        panel.add(planetVyField);
+        vyField = new JTextField("0.0");
+        vyField.setMaximumSize(new Dimension(Integer.MAX_VALUE, vyField.getPreferredSize().height));
+        panel.add(vyField);
         panel.add(Box.createVerticalStrut(5));
         
-        // Color dropdown
+        // Color
         JLabel colorLabel = new JLabel("Color:");
         colorLabel.setForeground(Color.WHITE);
         panel.add(colorLabel);
-        planetColorCombo = new JComboBox<>(new String[]{
+        colorCombo = new JComboBox<>(new String[]{
             "Blue", "Red", "Green", "Yellow", "Orange", "Purple", "Cyan", "White"
         });
-        planetColorCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, planetColorCombo.getPreferredSize().height));
-        panel.add(planetColorCombo);
+        colorCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, colorCombo.getPreferredSize().height));
+        panel.add(colorCombo);
         panel.add(Box.createVerticalStrut(10));
         
         // Add Planet button
@@ -154,71 +147,64 @@ public class ControlPanel extends JPanel {
                 onAddPlanet.run();
             }
         });
-        // Remove spacebar activation from button
         removeSpacebarActivation(addPlanetButton);
         panel.add(addPlanetButton);
+        panel.add(Box.createVerticalStrut(5));
         
-        // Add flexible space at bottom
+        // Add Stationary Mass button
+        JButton addStationaryMassButton = new JButton("Add Stationary Mass");
+        addStationaryMassButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, addStationaryMassButton.getPreferredSize().height));
+        addStationaryMassButton.addActionListener(e -> {
+            if (onAddStationaryMass != null) {
+                onAddStationaryMass.run();
+            }
+        });
+        removeSpacebarActivation(addStationaryMassButton);
+        panel.add(addStationaryMassButton);
+        
         panel.add(Box.createVerticalGlue());
         
         return panel;
     }
     
     /**
-     * Creates the panel for PointMass controls.
+     * Creates the Settings panel.
      */
-    private JPanel createPointMassPanel() {
+    private JPanel createSettingsPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBackground(new Color(50, 50, 50));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
-        // Mass field
-        JLabel massLabel = new JLabel("Mass:");
-        massLabel.setForeground(Color.WHITE);
-        panel.add(massLabel);
-        pointMassField = new JTextField("500.0");
-        pointMassField.setMaximumSize(new Dimension(Integer.MAX_VALUE, pointMassField.getPreferredSize().height));
-        panel.add(pointMassField);
-        panel.add(Box.createVerticalStrut(5));
+        // Gravity slider
+        JLabel gLabel = new JLabel("Gravitational Constant (G):");
+        gLabel.setForeground(Color.WHITE);
+        panel.add(gLabel);
         
-        // Radius field
-        JLabel radiusLabel = new JLabel("Radius:");
-        radiusLabel.setForeground(Color.WHITE);
-        panel.add(radiusLabel);
-        pointMassRadiusField = new JTextField("10.0");
-        pointMassRadiusField.setMaximumSize(new Dimension(Integer.MAX_VALUE, pointMassRadiusField.getPreferredSize().height));
-        panel.add(pointMassRadiusField);
-        panel.add(Box.createVerticalStrut(5));
-        
-        // Color dropdown
-        JLabel colorLabel = new JLabel("Color:");
-        colorLabel.setForeground(Color.WHITE);
-        panel.add(colorLabel);
-        pointMassColorCombo = new JComboBox<>(new String[]{
-            "Blue", "Red", "Green", "Yellow", "Orange", "Purple", "Cyan", "White"
-        });
-        pointMassColorCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, pointMassColorCombo.getPreferredSize().height));
-        panel.add(pointMassColorCombo);
-        panel.add(Box.createVerticalStrut(10));
-        
-        // Add Point Mass button
-        JButton addPointMassButton = new JButton("Add Point Mass");
-        addPointMassButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, addPointMassButton.getPreferredSize().height));
-        addPointMassButton.addActionListener(e -> {
-            if (onAddPointMass != null) {
-                onAddPointMass.run();
+        gravitySlider = new JSlider(0, 10000, 6000);
+        gravitySlider.setMaximumSize(new Dimension(Integer.MAX_VALUE, gravitySlider.getPreferredSize().height));
+        gravitySlider.setBackground(new Color(50, 50, 50));
+        gravitySlider.setForeground(Color.WHITE);
+        gravitySlider.addChangeListener(e -> {
+            if (onGravityChanged != null) {
+                onGravityChanged.accept((double) gravitySlider.getValue());
             }
         });
-        // Remove spacebar activation from button
-        removeSpacebarActivation(addPointMassButton);
-        panel.add(addPointMassButton);
+        panel.add(gravitySlider);
         
-        // Add flexible space at bottom
+        JLabel gValueLabel = new JLabel("G = 6000");
+        gValueLabel.setForeground(Color.LIGHT_GRAY);
+        gValueLabel.setFont(new Font("Sans-serif", Font.PLAIN, 11));
+        gravitySlider.addChangeListener(e -> {
+            gValueLabel.setText("G = " + gravitySlider.getValue());
+        });
+        panel.add(gValueLabel);
+        
         panel.add(Box.createVerticalGlue());
         
         return panel;
     }
+    
     
     /**
      * Gets planet data from the control fields.
@@ -227,11 +213,11 @@ public class ControlPanel extends JPanel {
      */
     public PlanetData getPlanetData() {
         try {
-            double mass = Double.parseDouble(planetMassField.getText());
-            double radius = Double.parseDouble(planetRadiusField.getText());
-            double vx = Double.parseDouble(planetVxField.getText());
-            double vy = Double.parseDouble(planetVyField.getText());
-            Color color = getColorFromCombo(planetColorCombo);
+            double mass = Double.parseDouble(massField.getText());
+            double radius = Double.parseDouble(radiusField.getText());
+            double vx = Double.parseDouble(vxField.getText());
+            double vy = Double.parseDouble(vyField.getText());
+            Color color = getColorFromCombo(colorCombo);
             
             return new PlanetData(mass, radius, vx, vy, color);
         } catch (NumberFormatException e) {
@@ -240,17 +226,17 @@ public class ControlPanel extends JPanel {
     }
     
     /**
-     * Gets point mass data from the control fields.
+     * Gets stationary mass data from the control fields.
      * 
-     * @return PointMassData object containing the values, or null if invalid
+     * @return StationaryMassData object containing the values, or null if invalid
      */
-    public PointMassData getPointMassData() {
+    public StationaryMassData getStationaryMassData() {
         try {
-            double mass = Double.parseDouble(pointMassField.getText());
-            double radius = Double.parseDouble(pointMassRadiusField.getText());
-            Color color = getColorFromCombo(pointMassColorCombo);
+            double mass = Double.parseDouble(massField.getText());
+            double radius = Double.parseDouble(radiusField.getText());
+            Color color = getColorFromCombo(colorCombo);
             
-            return new PointMassData(mass, radius, color);
+            return new StationaryMassData(mass, radius, color);
         } catch (NumberFormatException e) {
             return null;
         }
@@ -260,6 +246,7 @@ public class ControlPanel extends JPanel {
      * Gets the selected color from the combo box.
      */
     private Color getColorFromCombo(JComboBox<String> combo) {
+        if (combo == null || combo.getSelectedItem() == null) return Color.BLUE;
         String colorName = (String) combo.getSelectedItem();
         switch (colorName) {
             case "Blue": return Color.BLUE;
@@ -312,14 +299,14 @@ public class ControlPanel extends JPanel {
     }
     
     /**
-     * Data class for point mass creation.
+     * Data class for stationary mass creation.
      */
-    public static class PointMassData {
+    public static class StationaryMassData {
         public final double mass;
         public final double radius;
         public final Color color;
         
-        public PointMassData(double mass, double radius, Color color) {
+        public StationaryMassData(double mass, double radius, Color color) {
             this.mass = mass;
             this.radius = radius;
             this.color = color;

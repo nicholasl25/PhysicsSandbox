@@ -53,6 +53,8 @@ public class GravitySimulation extends BaseSimulation {
     /** Control panel for adding objects */
     private ControlPanel controlPanel;
     private double clickedWorldX, clickedWorldY;
+
+    private Planet clickedPlanet = null;
     
     /**
      * Sets up the simulation window and creates initial planets.
@@ -72,8 +74,9 @@ public class GravitySimulation extends BaseSimulation {
         // Create control panel
         controlPanel = new ControlPanel(
             this::addPlanetFromFields,
-            this::addPointMassFromFields,
-            this::clearSimulation
+            this::addStationaryMassFromFields,
+            this::clearSimulation,
+            this::updateGravity
         );
         
         // Initialize clicked position to center
@@ -168,6 +171,15 @@ public class GravitySimulation extends BaseSimulation {
                         clickedWorldX = e.getX() - panLevelX;
                         clickedWorldY = e.getY() - panLevelY;
                         
+                        // Check if the clicked position is on a planet
+                        for (Planet planet : planets) {
+                            if (planet.containsPoint(clickedWorldX, clickedWorldY)) {
+                                clickedPlanet = planet;
+                                planet.clicked();
+                                break;
+                            }
+                        }
+                        
                         // Repaint to show the red X marker
                         drawingPanel.repaint();
                     }
@@ -233,10 +245,10 @@ public class GravitySimulation extends BaseSimulation {
     }
     
     /**
-     * Adds a point mass using values from the control panel
+     * Adds a stationary mass using values from the control panel
      */
-    private void addPointMassFromFields() {
-        ControlPanel.PointMassData data = controlPanel.getPointMassData();
+    private void addStationaryMassFromFields() {
+        ControlPanel.StationaryMassData data = controlPanel.getStationaryMassData();
         if (data == null) {
             JOptionPane.showMessageDialog(this, "Please enter valid numbers!", "Error", JOptionPane.ERROR_MESSAGE);
             return;
@@ -246,6 +258,13 @@ public class GravitySimulation extends BaseSimulation {
                                          data.radius, data.color);
         masses.add(newMass);
         drawingPanel.repaint();
+    }
+    
+    /**
+     * Updates the gravitational constant from the slider
+     */
+    private void updateGravity(Double newGravity) {
+        gravitationalConstant = newGravity;
     }
     
     /**
@@ -441,7 +460,46 @@ public class GravitySimulation extends BaseSimulation {
                     mass.draw(g2d);
                 }
             }
-            
+
+            if (clickedPlanet != null) {
+                Planet selectedPlanet = clickedPlanet;
+                g2d.setTransform(originalTransform);
+
+                // Draw info box
+                int infoX = 10;
+                int infoY = 100;
+                int boxWidth = 250;
+                int boxHeight = 150;
+
+                g2d.setColor(new Color(0, 0, 0, 200));
+                g2d.fillRect(infoX, infoY, boxWidth, boxHeight);
+                
+                // Border
+                g2d.setColor(Color.YELLOW);
+                g2d.drawRect(infoX, infoY, boxWidth, boxHeight);
+                
+                // Planet info text
+                g2d.setColor(Color.WHITE);
+                int textY = infoY + 20;
+                g2d.drawString("=== SELECTED PLANET ===", infoX + 10, textY);
+                textY += 20;
+                g2d.drawString(String.format("Mass: %.2f", selectedPlanet.mass), infoX + 10, textY);
+                textY += 20;
+                g2d.drawString(String.format("Radius: %.2f", selectedPlanet.radius), infoX + 10, textY);
+                textY += 20;
+                g2d.drawString(String.format("Position: (%.1f, %.1f)", selectedPlanet.x, selectedPlanet.y), 
+                            infoX + 10, textY);
+                textY += 20;
+                g2d.drawString(String.format("Velocity: (%.2f, %.2f)", selectedPlanet.vx, selectedPlanet.vy), 
+                            infoX + 10, textY);
+                textY += 20;
+                
+                // Speed calculation
+                double speed = Math.sqrt(selectedPlanet.vx * selectedPlanet.vx + 
+                                        selectedPlanet.vy * selectedPlanet.vy);
+                g2d.drawString(String.format("Speed: %.2f", speed), infoX + 10, textY);
+            }
+                        
             // Draw red X marker at last click position
             drawClickMarker(g2d);
             
@@ -460,7 +518,7 @@ public class GravitySimulation extends BaseSimulation {
             g2d.setColor(Color.WHITE);
             g2d.drawString("Controls: Click to set position, then use panel on right. Drag = pan, SPACE = pause/resume", 10, getHeight() - 10);
         }
-        
+
         /**
          * Draws a grid background to provide visual position reference.
          * The grid pans with the view.

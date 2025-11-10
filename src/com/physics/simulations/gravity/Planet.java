@@ -2,6 +2,7 @@ package com.physics.simulations.gravity;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.BasicStroke;
 
 /**
  * Planet class - represents a celestial body in the gravity simulation.
@@ -23,7 +24,8 @@ public class Planet {
     double x, y;
     double vx, vy;
     Color color;
-   
+    boolean clicked = false;
+
     public Planet(double mass, double radius, double x, double y, double vx, double vy, Color color) {
         this.mass = mass;
         this.radius = radius;
@@ -32,7 +34,7 @@ public class Planet {
         this.vx = vx;
         this.vy = vy;
         this.color = color;
-
+        this.clicked = false;
     }
     
     /**
@@ -106,12 +108,20 @@ public class Planet {
         int drawY = (int)(y - radius);
         int size = (int)(radius * 2);
         g2d.fillOval(drawX, drawY, size, size);
-        
+
+        if (clicked) {
+            g2d.setStroke(new BasicStroke(3.0f));
+            g2d.setColor(Color.YELLOW);
+            g2d.drawOval(drawX-5, drawY-5, size+10, size+10);
+        }
         // Optional: Draw velocity vector
         // g2d.setColor(Color.YELLOW);
         // g2d.drawLine((int)x, (int)y, (int)(x + vx), (int)(y + vy));
     }
-    
+
+    public void clicked() {
+        this.clicked = !this.clicked;
+    }
 
     /**
      * Checks if this planet collides with another planet.
@@ -204,10 +214,18 @@ public class Planet {
         this.vx = new_vx;
         this.vy = new_vy;
     }
+
+    public boolean containsPoint(double x, double y) {
+        double dx = x - this.x;
+        double dy = y - this.y;
+        return Math.sqrt(dx*dx + dy*dy) <= this.radius;
+    }
     
     @Override
     public String toString() {
         return String.format("Planet at (%.2f, %.2f) vel=(%.2f, %.2f)", x, y, vx, vy);
     }
+
+
 }
 
