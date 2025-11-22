@@ -25,8 +25,8 @@ public class PlanetRK4 extends Planet {
      * Constructor - same as Planet constructor
      */
     public PlanetRK4(double mass, double radius, double x, double y, double vx, double vy, 
-                     double angularVelocity, Color color, String texturePath) {
-        super(mass, radius, x, y, vx, vy, angularVelocity, color, texturePath);
+                     double angularVelocity, Color color, String texturePath, String name) {
+        super(mass, radius, x, y, vx, vy, angularVelocity, color, texturePath, name);
     }
     
     /**

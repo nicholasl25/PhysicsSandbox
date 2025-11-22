@@ -13,15 +13,22 @@ public class PointMass extends Planet {
      * Constructor for PointMass with default radius and color
      */
     public PointMass(double mass, double x, double y) {
-        this(mass, x, y, 10, Color.WHITE);
+        this(mass, x, y, 10, Color.WHITE, null);
     }
 
     /**
-     * Constructor for PointMass
+     * Constructor for PointMass with default name
      */
     public PointMass(double mass, double x, double y, double radius, Color color) {
+        this(mass, x, y, radius, color, null);
+    }
+
+    /**
+     * Constructor for PointMass with all parameters
+     */
+    public PointMass(double mass, double x, double y, double radius, Color color, String name) {
         // Call Planet constructor with zero velocity and angular velocity (stationary)
-        super(mass, radius, x, y, 0.0, 0.0, 0.0, color, null);
+        super(mass, radius, x, y, 0.0, 0.0, 0.0, color, null, name);
     }
 
     /**
@@ -81,7 +88,12 @@ public class PointMass extends Planet {
         int b = (c1.getBlue() + c2.getBlue()) / 2;
         Color newColor = new Color(r, g, b);
         
+        // Keep PointMass name if it has one, otherwise use other's name, or null
+        String mergedName = (this.name != null && !this.name.trim().isEmpty()) 
+            ? this.name 
+            : (other.name != null && !other.name.trim().isEmpty() ? other.name : null);
+        
         // Position stays at PointMass location (stationary)
-        return new PointMass(combinedMass, this.x, this.y, newRadius, newColor);
+        return new PointMass(combinedMass, this.x, this.y, newRadius, newColor, mergedName);
     }
 }

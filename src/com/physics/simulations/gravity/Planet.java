@@ -32,6 +32,7 @@ public class Planet {
     Color color;
     boolean clicked = false;
     double angularVelocity;
+    String name;
     
     // Texture and rotation fields
     private BufferedImage texture;
@@ -39,7 +40,8 @@ public class Planet {
     private String texturePath;
 
     // Constructor with texture
-    public Planet(double mass, double radius, double x, double y, double vx, double vy, double angularVelocity, Color color, String texturePath) {
+    public Planet(double mass, double radius, double x, double y, double vx, double vy,
+    double angularVelocity, Color color, String texturePath, String name) {
         this.mass = mass;
         this.radius = radius;
         this.x = x;
@@ -50,6 +52,7 @@ public class Planet {
         this.clicked = false;
         this.texturePath = texturePath;
         this.angularVelocity = angularVelocity;
+        this.name = name;
         
         // Load texture if provided
         if (texturePath != null && !texturePath.isEmpty()) {
@@ -236,13 +239,17 @@ public class Planet {
         double newAngularVelocity = 2.5 * angularMomentum / (newRadius * newRadius * combinedMass);
 
         String newTexturePath = null;
+        String newName = null;
         if (this.radius > other.radius) {
             newTexturePath = this.texturePath;
+            newName = this.name;
         } else {
             newTexturePath = other.texturePath;
+            newName = other.name;
         }
         
-        return new Planet(combinedMass, newRadius, newX, newY, newVx, newVy, newAngularVelocity, newColor, newTexturePath);
+        return new Planet(combinedMass, newRadius, newX, newY, newVx, newVy, 
+        newAngularVelocity, newColor, newTexturePath, newName);
     }
 
     public void bouncePlanet(double coefficientOfRestitution, Planet other) {

@@ -38,6 +38,9 @@ public class GravitySimulation extends BaseSimulation {
     /** Pan offsets (in screen coordinates) */
     private double panLevelX = 0.0;
     private double panLevelY = 0.0;
+    
+    /** Zoom level (1.0 = normal, 2.0 = 2x zoom, 0.5 = zoomed out) */
+    private double zoomLevel = 1.0;
 
     /** Mouse drag tracking */
     private int lastMouseX = 0;
@@ -60,6 +63,7 @@ public class GravitySimulation extends BaseSimulation {
     private double maxRadius = 100;
     private double maxVelocity = 1000;
     private int maxObjects = 100;
+    private int planetCounter = 1;  // Counter for automatic planet naming
     
     /**
      * Sets up the simulation window and creates initial planets.
@@ -119,7 +123,8 @@ public class GravitySimulation extends BaseSimulation {
             500.0, 400.0,        
             0.0, 0.0, 0.02,             
             Color.YELLOW, 
-            "resources/textures/Sun.jpg"  
+            "resources/textures/Sun.jpg",
+            "Sun"
         );
 
 
@@ -129,7 +134,8 @@ public class GravitySimulation extends BaseSimulation {
             700.0, 400.0,
             0.0, -80.0, 0.06,
             Color.BLUE,
-            "resources/textures/Earth.jpg"
+            "resources/textures/Earth.jpg",
+            "Earth"
         );
         
         planets.add(sun);
@@ -173,9 +179,10 @@ public class GravitySimulation extends BaseSimulation {
                     
                     // If drag distance is small (less than 5 pixels), treat as click
                     if (!hasDragged || dragDistance < 5) {
-                        // Convert screen coordinates to world coordinates
-                        clickedWorldX = e.getX() - panLevelX;
-                        clickedWorldY = e.getY() - panLevelY;
+                        // Convert screen coordinates to world coordinates using helper method
+                        double[] worldCoords = screenToWorld(e.getX(), e.getY());
+                        clickedWorldX = worldCoords[0];
+                        clickedWorldY = worldCoords[1];
                         
                         // Check if the clicked position is on a planet
                         for (Planet planet : planets) {
@@ -216,13 +223,13 @@ public class GravitySimulation extends BaseSimulation {
                     int currentX = e.getX();
                     int currentY = e.getY();
                     
-                    // Calculate delta (difference in mouse position)
+                    // Calculate delta (difference in mouse position) - scale by zoom for proportional movement
                     int deltaX = currentX - lastMouseX;
                     int deltaY = currentY - lastMouseY;
                     
-                    // Update pan - move the view in the direction of the drag
-                    panLevelX += deltaX;
-                    panLevelY += deltaY;
+                    // Update pan - move the view in the direction of the drag (proportional to zoom)
+                    panLevelX += deltaX / zoomLevel;
+                    panLevelY += deltaY / zoomLevel;
                     
                     // Update last mouse position
                     lastMouseX = currentX;
@@ -261,13 +268,33 @@ public class GravitySimulation extends BaseSimulation {
             JOptionPane.showMessageDialog(this, "Please limit planet velocities to " + maxVelocity + ".", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-
-        // Calculate angular velocity from period before creating the planet
-        double angularVelocity = data.getAngularVelocity();
         
-        Planet newPlanet = new Planet(data.mass, data.radius, clickedWorldX, clickedWorldY, 
-                                     data.vx, data.vy, angularVelocity, data.color, data.texturePath);
-        planets.add(newPlanet);
+        // Determine planet name: use provided name or generate "Planet #N" or "PointMass #N"
+        String planetName;
+        if (data.name != null && !data.name.trim().isEmpty()) {
+            planetName = data.name.trim();
+        } else {
+            if (data.fixedLocation) {
+                planetName = "PointMass #" + planetCounter;
+            } else {
+                planetName = "Planet #" + planetCounter;
+            }
+            planetCounter++;
+        }
+        
+        Planet newObject;
+        if (data.fixedLocation) {
+            // Create a PointMass (stationary)
+            newObject = new PointMass(data.mass, clickedWorldX, clickedWorldY, 
+                                     data.radius, data.color, planetName);
+        } else {
+            // Create a regular Planet - calculate angular velocity from period
+            double angularVelocity = data.getAngularVelocity();
+            newObject = new Planet(data.mass, data.radius, clickedWorldX, clickedWorldY, 
+                                  data.vx, data.vy, angularVelocity, data.color, data.texturePath, planetName);
+        }
+        
+        planets.add(newObject);
         drawingPanel.repaint();
     }
     
@@ -287,8 +314,43 @@ public class GravitySimulation extends BaseSimulation {
      */
     private void clearSimulation() {
         planets.clear();
+        planetCounter = 1;  // Reset counter when simulation is cleared
         drawingPanel.repaint();
     }
+    
+    /**
+     * Converts screen coordinates to world coordinates.
+     * Uses AffineTransform to exactly reverse the drawing transformation.
+     * 
+     * @param screenX Screen X coordinate (relative to drawing panel)
+     * @param screenY Screen Y coordinate (relative to drawing panel)
+     * @return Array [worldX, worldY]
+     */
+    private double[] screenToWorld(int screenX, int screenY) {
+        // Use the same center calculation as drawing code
+        int centerX = drawingPanel.getWidth() / 2;
+        int centerY = drawingPanel.getHeight() / 2;
+        
+        // Build the forward transformation (same as drawing code)
+        AffineTransform transform = new AffineTransform();
+        transform.translate(centerX, centerY);
+        transform.scale(zoomLevel, zoomLevel);
+        transform.translate(-centerX, -centerY);
+        transform.translate(panLevelX, panLevelY);
+        
+        // Reverse the transformation
+        try {
+            AffineTransform inverse = transform.createInverse();
+            double[] src = {screenX, screenY};
+            double[] dst = new double[2];
+            inverse.transform(src, 0, dst, 0, 1);
+            return dst;
+        } catch (java.awt.geom.NoninvertibleTransformException e) {
+            // Should never happen with valid zoom/pan, but return screen coords if it does
+            return new double[]{screenX, screenY};
+        }
+    }
+    
     
     /**
      * Sets up key bindings for pause/resume.
@@ -315,6 +377,36 @@ public class GravitySimulation extends BaseSimulation {
         KeyStroke spaceKey = KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0);
         inputMap.put(spaceKey, "pauseResume");
         actionMap.put("pauseResume", pauseResumeAction);
+        
+        // Zoom in action (+ key)
+        AbstractAction zoomInAction = new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                zoomLevel *= 2.0;
+                drawingPanel.repaint();
+            }
+        };
+        
+        // Zoom out action (- key)
+        AbstractAction zoomOutAction = new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                zoomLevel /= 2.0;
+                drawingPanel.repaint();
+            }
+        };
+        
+        // Bind + and - keys for zoom
+        KeyStroke plusKey = KeyStroke.getKeyStroke(KeyEvent.VK_PLUS, 0);
+        KeyStroke minusKey = KeyStroke.getKeyStroke(KeyEvent.VK_MINUS, 0);
+        KeyStroke equalsKey = KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, 0); // + without shift
+        
+        inputMap.put(plusKey, "zoomIn");
+        inputMap.put(equalsKey, "zoomIn");
+        inputMap.put(minusKey, "zoomOut");
+        
+        actionMap.put("zoomIn", zoomInAction);
+        actionMap.put("zoomOut", zoomOutAction);
     }
     
     
@@ -456,7 +548,14 @@ public class GravitySimulation extends BaseSimulation {
             // Save the original transform for text drawing
             AffineTransform originalTransform = g2d.getTransform();
             
-            // Apply transformations: pan only
+            // Apply zoom centered on screen center
+            int screenCenterX = getWidth() / 2;
+            int screenCenterY = getHeight() / 2;
+            g2d.translate(screenCenterX, screenCenterY);
+            g2d.scale(zoomLevel, zoomLevel);
+            g2d.translate(-screenCenterX, -screenCenterY);
+            
+            // Apply pan
             g2d.translate(panLevelX, panLevelY);
             
             // Draw grid background for position reference
@@ -470,10 +569,11 @@ public class GravitySimulation extends BaseSimulation {
             }
             
             // Draw red X marker at last click position (in world coordinates)
-            drawClickMarker(g2d);
-            
-            // Restore original transform for text (so it's not zoomed/panned)
+            // Restore original transform for text and click marker (so they're not zoomed/panned)
             g2d.setTransform(originalTransform);
+            
+            // Draw click marker in screen coordinates so it stays the same size
+            drawClickMarker(g2d);
 
             if (clickedPlanet != null) {
                 Planet selectedPlanet = clickedPlanet;
@@ -482,7 +582,7 @@ public class GravitySimulation extends BaseSimulation {
                 int infoX = 10;
                 int infoY = 70;
                 int boxWidth = 250;
-                int boxHeight = 170;
+                int boxHeight = 190;  // Increased height for name field
 
                 g2d.setColor(new Color(0, 0, 0, 200));
                 g2d.fillRect(infoX, infoY, boxWidth, boxHeight);
@@ -495,6 +595,8 @@ public class GravitySimulation extends BaseSimulation {
                 g2d.setColor(Color.WHITE);
                 int textY = infoY + 20;
                 g2d.drawString("=== SELECTED PLANET ===", infoX + 10, textY);
+                textY += 20;
+                g2d.drawString(String.format("Name: %s", selectedPlanet.name != null ? selectedPlanet.name : "Unnamed"), infoX + 10, textY);
                 textY += 20;
                 g2d.drawString(String.format("Mass: %.2f", selectedPlanet.mass), infoX + 10, textY);
                 textY += 20;
@@ -569,7 +671,13 @@ public class GravitySimulation extends BaseSimulation {
          * Draws a red X marker at the last click position
          */
         private void drawClickMarker(Graphics2D g2d) {
-            // Size of the X marker
+            // Convert world coordinates to screen coordinates for drawing
+            int centerX = getWidth() / 2;
+            int centerY = getHeight() / 2;
+            double screenX = zoomLevel * (clickedWorldX + centerX) - centerX + panLevelX;
+            double screenY = zoomLevel * (clickedWorldY + centerY) - centerY + panLevelY;
+            
+            // Size of the X marker (in screen pixels, stays constant)
             int markerSize = 15;
             int halfSize = markerSize / 2;
             
@@ -577,9 +685,9 @@ public class GravitySimulation extends BaseSimulation {
             g2d.setColor(Color.RED);
             g2d.setStroke(new BasicStroke(2.0f));
             
-            // Draw the X: two diagonal lines
-            int x = (int) clickedWorldX;
-            int y = (int) clickedWorldY;
+            // Draw the X: two diagonal lines at screen coordinates
+            int x = (int) screenX;
+            int y = (int) screenY;
             
             // Draw diagonal lines forming an X
             g2d.drawLine(x - halfSize, y - halfSize, x + halfSize, y + halfSize);

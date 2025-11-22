@@ -10,11 +10,12 @@ import java.awt.event.KeyEvent;
  */
 public class ControlPanel extends JPanel {
     // Input fields
-    private JTextField massField, radiusField, vxField, vyField, periodField;
-    private JComboBox<String> colorCombo, textureCombo;
+    private JTextField massField, radiusField, vxField, vyField, periodField, nameField;
+    private JComboBox<String> textureCombo;
     private JSlider gravitySlider, timeFactorSlider;
     private JPanel advancedPanel;
     private boolean advancedExpanded = false;
+    private JCheckBox fixedLocationCheckBox;
     
     // Callbacks
     private Runnable onAddPlanet;
@@ -95,61 +96,78 @@ public class ControlPanel extends JPanel {
         panel.setBackground(new Color(50, 50, 50));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
+        // Name (optional)
+        JLabel nameLabel = new JLabel("Name (optional):");
+        nameLabel.setForeground(Color.WHITE);
+        nameLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(nameLabel);
+        nameField = new JTextField("");
+        nameField.setMaximumSize(new Dimension(Integer.MAX_VALUE, nameField.getPreferredSize().height));
+        nameField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        nameField.setToolTipText("Leave empty for automatic naming (Planet #N)");
+        panel.add(nameField);
+        panel.add(Box.createVerticalStrut(5));
+        
         // Mass
         JLabel massLabel = new JLabel("Mass:");
         massLabel.setForeground(Color.WHITE);
+        massLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(massLabel);
         massField = new JTextField("50.0");
         massField.setMaximumSize(new Dimension(Integer.MAX_VALUE, massField.getPreferredSize().height));
+        massField.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(massField);
         panel.add(Box.createVerticalStrut(5));
         
         // Radius
         JLabel radiusLabel = new JLabel("Radius:");
         radiusLabel.setForeground(Color.WHITE);
+        radiusLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(radiusLabel);
         radiusField = new JTextField("10.0");
         radiusField.setMaximumSize(new Dimension(Integer.MAX_VALUE, radiusField.getPreferredSize().height));
+        radiusField.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(radiusField);
-        panel.add(Box.createVerticalStrut(5));
         
-        // VX
-        JLabel vxLabel = new JLabel("VX:");
+        // Velocity X and Y on the same line
+        JPanel velocityPanel = new JPanel();
+        velocityPanel.setLayout(new BoxLayout(velocityPanel, BoxLayout.X_AXIS));
+        velocityPanel.setBackground(new Color(50, 50, 50));
+        velocityPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
+        // Velocity X
+        JLabel vxLabel = new JLabel("Vx:");
         vxLabel.setForeground(Color.WHITE);
-        panel.add(vxLabel);
+        velocityPanel.add(vxLabel);
+        velocityPanel.add(Box.createHorizontalStrut(5));
         vxField = new JTextField("0.0");
-        vxField.setMaximumSize(new Dimension(Integer.MAX_VALUE, vxField.getPreferredSize().height));
-        panel.add(vxField);
-        panel.add(Box.createVerticalStrut(5));
+        vxField.setPreferredSize(new Dimension(80, vxField.getPreferredSize().height));
+        vxField.setMaximumSize(new Dimension(80, vxField.getPreferredSize().height));
+        velocityPanel.add(vxField);
+        velocityPanel.add(Box.createHorizontalStrut(10));
         
-        // VY
-        JLabel vyLabel = new JLabel("VY:");
+        // Velocity Y
+        JLabel vyLabel = new JLabel("Vy:");
         vyLabel.setForeground(Color.WHITE);
-        panel.add(vyLabel);
+        velocityPanel.add(vyLabel);
+        velocityPanel.add(Box.createHorizontalStrut(5));
         vyField = new JTextField("0.0");
-        vyField.setMaximumSize(new Dimension(Integer.MAX_VALUE, vyField.getPreferredSize().height));
-        panel.add(vyField);
-        panel.add(Box.createVerticalStrut(5));
+        vyField.setPreferredSize(new Dimension(80, vyField.getPreferredSize().height));
+        vyField.setMaximumSize(new Dimension(80, vyField.getPreferredSize().height));
+        velocityPanel.add(vyField);
         
-        // Color
-        JLabel colorLabel = new JLabel("Color:");
-        colorLabel.setForeground(Color.WHITE);
-        panel.add(colorLabel);
-        colorCombo = new JComboBox<>(new String[]{
-            "Blue", "Red", "Green", "Yellow", "Orange", "Purple", "Cyan", "White"
-        });
-        colorCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, colorCombo.getPreferredSize().height));
-        panel.add(colorCombo);
-        panel.add(Box.createVerticalStrut(5));
+        panel.add(velocityPanel);
         
         // Texture
         JLabel textureLabel = new JLabel("Texture:");
         textureLabel.setForeground(Color.WHITE);
+        textureLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(textureLabel);
         textureCombo = new JComboBox<>(new String[]{
-            "None (Solid Color)", "Earth", "Mars", "Jupiter", "Moon", "Sun", "Venus"
+            "No Texture", "Earth", "Mars", "Jupiter", "Moon", "Sun", "Venus"
         });
         textureCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, textureCombo.getPreferredSize().height));
+        textureCombo.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(textureCombo);
         panel.add(Box.createVerticalStrut(10));
         
@@ -159,6 +177,7 @@ public class ControlPanel extends JPanel {
         advancedHeader.setBackground(new Color(60, 60, 60));
         advancedHeader.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         advancedHeader.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        advancedHeader.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         JLabel advancedLabel = new JLabel("▶ Advanced Settings");
         advancedLabel.setForeground(Color.LIGHT_GRAY);
@@ -201,12 +220,31 @@ public class ControlPanel extends JPanel {
         JLabel periodLabel = new JLabel("Period of Rotation (T):");
         periodLabel.setForeground(Color.WHITE);
         periodLabel.setFont(new Font("Sans-serif", Font.PLAIN, 11));
+        periodLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         advancedPanel.add(periodLabel);
         
         periodField = new JTextField("100.0");
         periodField.setMaximumSize(new Dimension(Integer.MAX_VALUE, periodField.getPreferredSize().height));
+        periodField.setAlignmentX(Component.LEFT_ALIGNMENT);
         periodField.setToolTipText("Time for one complete rotation (seconds)");
         advancedPanel.add(periodField);
+        advancedPanel.add(Box.createVerticalStrut(10));
+        
+        // Fixed Location checkbox
+        fixedLocationCheckBox = new JCheckBox("Fixed Location");
+        fixedLocationCheckBox.setForeground(Color.WHITE);
+        fixedLocationCheckBox.setBackground(new Color(50, 50, 50));
+        fixedLocationCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fixedLocationCheckBox.setToolTipText("Creates a stationary PointMass instead of a moving Planet");
+        advancedPanel.add(fixedLocationCheckBox);
+        
+        // Description for Fixed Location
+        JLabel fixedLocationDesc = new JLabel("<html><div style='width:200px'>Creates a stationary mass that<br>exerts gravity but doesn't move</div></html>");
+        fixedLocationDesc.setForeground(Color.LIGHT_GRAY);
+        fixedLocationDesc.setFont(new Font("Sans-serif", Font.PLAIN, 10));
+        fixedLocationDesc.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fixedLocationDesc.setBorder(BorderFactory.createEmptyBorder(0, 25, 0, 0)); // Indent to align with checkbox
+        advancedPanel.add(fixedLocationDesc);
         
         panel.add(advancedPanel);
         panel.add(Box.createVerticalStrut(10));
@@ -214,6 +252,7 @@ public class ControlPanel extends JPanel {
         // Add Planet button
         JButton addPlanetButton = new JButton("Add Planet");
         addPlanetButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, addPlanetButton.getPreferredSize().height));
+        addPlanetButton.setAlignmentX(Component.LEFT_ALIGNMENT);
         addPlanetButton.addActionListener(e -> {
             if (onAddPlanet != null) {
                 onAddPlanet.run();
@@ -306,10 +345,14 @@ public class ControlPanel extends JPanel {
             double vx = Double.parseDouble(vxField.getText());
             double vy = Double.parseDouble(vyField.getText());
             double period = Double.parseDouble(periodField.getText());
-            Color color = getColorFromCombo(colorCombo);
             String texturePath = getTexturePath();
+            String name = nameField.getText().trim(); // Get name, empty string if not provided
+            boolean fixedLocation = fixedLocationCheckBox.isSelected();
             
-            return new PlanetData(mass, radius, vx, vy, period, color, texturePath);
+            // Get color based on texture selection (default Blue if no texture)
+            Color color = getColorFromTexture();
+            
+            return new PlanetData(mass, radius, vx, vy, period, color, texturePath, name, fixedLocation);
         } catch (NumberFormatException e) {
             return null;
         }
@@ -320,27 +363,31 @@ public class ControlPanel extends JPanel {
      */
     private String getTexturePath() {
         String selected = (String) textureCombo.getSelectedItem();
-        if (selected == null || selected.equals("None (Solid Color)")) {
+        if (selected == null || selected.equals("No Texture")) {
             return null;
         }
         return "resources/textures/" + selected + ".jpg";
     }
     
     /**
-     * Gets the selected color from the combo box.
+     * Gets the color based on texture selection.
+     * When "No Texture" is selected, returns a default color (Blue).
+     * Otherwise, returns a color that matches the texture theme.
      */
-    private Color getColorFromCombo(JComboBox<String> combo) {
-        if (combo == null || combo.getSelectedItem() == null) return Color.BLUE;
-        String colorName = (String) combo.getSelectedItem();
-        switch (colorName) {
-            case "Blue": return Color.BLUE;
-            case "Red": return Color.RED;
-            case "Green": return Color.GREEN;
-            case "Yellow": return Color.YELLOW;
-            case "Orange": return Color.ORANGE;
-            case "Purple": return Color.MAGENTA;
-            case "Cyan": return Color.CYAN;
-            case "White": return Color.WHITE;
+    private Color getColorFromTexture() {
+        String selected = (String) textureCombo.getSelectedItem();
+        if (selected == null || selected.equals("No Texture")) {
+            return Color.BLUE; // Default color when no texture
+        }
+        
+        // Map texture names to appropriate colors
+        switch (selected) {
+            case "Earth": return new Color(30, 100, 200); // Blue-green
+            case "Mars": return new Color(200, 50, 30); // Red-orange
+            case "Jupiter": return new Color(200, 150, 100); // Brown-orange
+            case "Moon": return new Color(180, 180, 180); // Gray
+            case "Sun": return Color.YELLOW;
+            case "Venus": return new Color(255, 200, 100); // Yellow-orange
             default: return Color.BLUE;
         }
     }
@@ -374,8 +421,10 @@ public class ControlPanel extends JPanel {
         public final double period;  // Period of rotation in seconds
         public final Color color;
         public final String texturePath;
+        public final String name;  // Planet name (empty string if not provided)
+        public final boolean fixedLocation;  // If true, creates a PointMass instead of Planet
         
-        public PlanetData(double mass, double radius, double vx, double vy, double period, Color color, String texturePath) {
+        public PlanetData(double mass, double radius, double vx, double vy, double period, Color color, String texturePath, String name, boolean fixedLocation) {
             this.mass = mass;
             this.radius = radius;
             this.vx = vx;
@@ -383,6 +432,8 @@ public class ControlPanel extends JPanel {
             this.period = period;
             this.color = color;
             this.texturePath = texturePath;
+            this.name = name;
+            this.fixedLocation = fixedLocation;
         }
         
         /**
