@@ -13,7 +13,6 @@ import javax.swing.JFrame;
  * Simulations are organized by domain (astronomy, fluids, mechanics, etc.)
  * and don't share implementation code between them.
  * 
- * TODO: Implement the methods in your simulation classes!
  */
 public abstract class BaseSimulation extends JFrame {
     

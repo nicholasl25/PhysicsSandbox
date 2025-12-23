@@ -20,6 +20,10 @@ import java.awt.RenderingHints;
  * - Mass (affects gravitational pull)
  * - Size/radius (for drawing)
  * - Color (visual representation)
+ * - Angular velocity (for rotation)
+ * - Texture (for drawing)
+ * - Name (for identification)
+ * - Temperature (to update texture WIP)
  */
 
 
@@ -32,16 +36,25 @@ public class Planet {
     Color color;
     boolean clicked = false;
     double angularVelocity;
+    double temperature;
     String name;
     
     // Texture and rotation fields
     private BufferedImage texture;
     protected double rotationAngle = 0.0;
-    private String texturePath;
+    protected String texturePath;
+    
+    // RK4 integration fields (optional, only used when RK4 methods are called)
+    private double k1vx, k1vy, k1x, k1y;
+    private double k2vx, k2vy, k2x, k2y;
+    private double k3vx, k3vy, k3x, k3y;
+    private double k4vx, k4vy, k4x, k4y;
+    private double lastAx = 0.0;
+    private double lastAy = 0.0;
 
     // Constructor with texture
     public Planet(double mass, double radius, double x, double y, double vx, double vy,
-    double angularVelocity, Color color, String texturePath, String name) {
+    double angularVelocity, double temperature, Color color, String texturePath, String name) {
         this.mass = mass;
         this.radius = radius;
         this.x = x;
@@ -52,6 +65,7 @@ public class Planet {
         this.clicked = false;
         this.texturePath = texturePath;
         this.angularVelocity = angularVelocity;
+        this.temperature = temperature;
         this.name = name;
         
         // Load texture if provided
@@ -93,7 +107,7 @@ public class Planet {
         this.y += this.vy * deltaTime * timeFactor;
         
         // Update rotation angle
-        this.rotationAngle += angularVelocity * timeFactor;
+        this.rotationAngle += angularVelocity * timeFactor * deltaTime;
         this.rotationAngle %= (Math.PI * 2);  // reduce it into [ -2π, 2π )
 
         // make sure it's positive if you want it in [0, 2π)
@@ -112,6 +126,90 @@ public class Planet {
     public void updateVelocity(double ax, double ay, double deltaTime) {
         vx += ax * deltaTime;
         vy += ay * deltaTime;
+    }
+    
+    /**
+     * Updates velocity using RK4 integration.
+     * Uses the provided acceleration and estimates intermediate accelerations
+     * by assuming velocity changes linearly.
+     * 
+     * @param ax Acceleration in x direction
+     * @param ay Acceleration in y direction
+     * @param deltaTime Time step
+     */
+    public void updateVelocityRK4(double ax, double ay, double deltaTime) {
+        // Store acceleration for position RK4
+        lastAx = ax;
+        lastAy = ay;
+        
+        // k1: acceleration at current state
+        k1vx = ax * deltaTime;
+        k1vy = ay * deltaTime;
+        
+        // k2: acceleration at midpoint (estimate using k1)
+        // Assume acceleration changes linearly: a(t+dt/2) ≈ a(t)
+        k2vx = ax * deltaTime;
+        k2vy = ay * deltaTime;
+        
+        // k3: acceleration at midpoint using k2 (same estimate)
+        k3vx = ax * deltaTime;
+        k3vy = ay * deltaTime;
+        
+        // k4: acceleration at end using k3
+        k4vx = ax * deltaTime;
+        k4vy = ay * deltaTime;
+        
+        // Weighted average: v += (k1 + 2*k2 + 2*k3 + k4) / 6
+        // Since all k values are the same, this simplifies to Euler, but we keep
+        // the structure for when intermediate accelerations can be computed
+        vx += (k1vx + 2.0 * k2vx + 2.0 * k3vx + k4vx) / 6.0;
+        vy += (k1vy + 2.0 * k2vy + 2.0 * k3vy + k4vy) / 6.0;
+    }
+    
+    /**
+     * Updates position using RK4 integration.
+     * Uses intermediate velocities computed from the current velocity and acceleration.
+     * 
+     * @param deltaTime Time step
+     * @param timeFactor Time scaling factor
+     */
+    public void updatePositionRK4(double deltaTime, double timeFactor) {
+        double dt = deltaTime * timeFactor;
+        
+        // k1: velocity at current state
+        k1x = vx * dt;
+        k1y = vy * dt;
+        
+        // k2: velocity at midpoint using k1
+        // v(t + dt/2) ≈ v(t) + a(t) * dt/2
+        double vxMid1 = vx + lastAx * dt * 0.5;
+        double vyMid1 = vy + lastAy * dt * 0.5;
+        k2x = vxMid1 * dt;
+        k2y = vyMid1 * dt;
+        
+        // k3: velocity at midpoint using k2
+        double vxMid2 = vx + lastAx * dt * 0.5;
+        double vyMid2 = vy + lastAy * dt * 0.5;
+        k3x = vxMid2 * dt;
+        k3y = vyMid2 * dt;
+        
+        // k4: velocity at end using k3
+        // v(t + dt) ≈ v(t) + a(t) * dt
+        double vxEnd = vx + lastAx * dt;
+        double vyEnd = vy + lastAy * dt;
+        k4x = vxEnd * dt;
+        k4y = vyEnd * dt;
+        
+        // Weighted average: x += (k1 + 2*k2 + 2*k3 + k4) / 6
+        x += (k1x + 2.0 * k2x + 2.0 * k3x + k4x) / 6.0;
+        y += (k1y + 2.0 * k2y + 2.0 * k3y + k4y) / 6.0;
+        
+        // Update rotation angle (same as parent)
+        rotationAngle += angularVelocity * timeFactor;
+        rotationAngle %= (Math.PI * 2);
+        if (rotationAngle < 0) {
+            rotationAngle += Math.PI * 2;
+        }
     }
     
     /**
@@ -225,6 +323,8 @@ public class Planet {
         double newX = (this.x * this.mass + other.x * other.mass) / combinedMass;
         double newY = (this.y * this.mass + other.y * other.mass) / combinedMass;
 
+        double newTemperature = (this.temperature * this.mass + other.temperature * other.mass) / combinedMass;
+
         double newRadius = this.radius > other.radius ? this.radius : other.radius;
 
         Color c1 = this.color;
@@ -235,21 +335,32 @@ public class Planet {
 
         Color newColor = new Color(r, g, b);
 
-        double angularMomentum = 0.4 * (this.radius * this.radius * this.mass + other.radius * other.radius * other.mass);
+        double angularMomentum = 0.4 * (this.radius * this.radius * this.mass * this.angularVelocity 
+        + other.radius * other.radius * other.mass * other.angularVelocity);
         double newAngularVelocity = 2.5 * angularMomentum / (newRadius * newRadius * combinedMass);
 
         String newTexturePath = null;
         String newName = null;
         if (this.radius > other.radius) {
-            newTexturePath = this.texturePath;
+            if (this.texturePath != null) {
+                newTexturePath = this.texturePath;
+            }
+            else {
+                newTexturePath = other.texturePath;
+            }
             newName = this.name;
         } else {
-            newTexturePath = other.texturePath;
+            if (other.texturePath != null) {
+                newTexturePath = other.texturePath;
+            }
+            else {
+                newTexturePath = this.texturePath;
+            }
             newName = other.name;
         }
         
         return new Planet(combinedMass, newRadius, newX, newY, newVx, newVy, 
-        newAngularVelocity, newColor, newTexturePath, newName);
+        newAngularVelocity, newTemperature, newColor, newTexturePath, newName);
     }
 
     public void bouncePlanet(double coefficientOfRestitution, Planet other) {

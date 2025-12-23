@@ -10,18 +10,22 @@ import java.awt.event.KeyEvent;
  */
 public class ControlPanel extends JPanel {
     // Input fields
-    private JTextField massField, radiusField, vxField, vyField, periodField, nameField;
+    private JTextField massField, radiusField, vxField, vyField, periodField, nameField, temperatureField;
     private JComboBox<String> textureCombo;
     private JSlider gravitySlider, timeFactorSlider;
     private JPanel advancedPanel;
     private boolean advancedExpanded = false;
     private JCheckBox fixedLocationCheckBox;
+    private JCheckBox bounceCheckBox;
+    private JCheckBox rk4CheckBox;
     
     // Callbacks
     private Runnable onAddPlanet;
     private Runnable onClearSimulation;
     private java.util.function.Consumer<Double> onGravityChanged;
     private java.util.function.Consumer<Double> onTimeFactorChanged;
+    private java.util.function.Consumer<Boolean> onBounceChanged;
+    private java.util.function.Consumer<Boolean> onRK4Changed;
     
     /**
      * Creates a new control panel with the specified callbacks.
@@ -30,14 +34,20 @@ public class ControlPanel extends JPanel {
      * @param onClearSimulation Called when "Clear Simulation" button is clicked
      * @param onGravityChanged Called when gravity slider changes
      * @param onTimeFactorChanged Called when time factor slider changes
+     * @param onBounceChanged Called when bounce checkbox changes
+     * @param onRK4Changed Called when RK4 checkbox changes
      */
     public ControlPanel(Runnable onAddPlanet, Runnable onClearSimulation, 
                        java.util.function.Consumer<Double> onGravityChanged,
-                       java.util.function.Consumer<Double> onTimeFactorChanged) {
+                       java.util.function.Consumer<Double> onTimeFactorChanged,
+                       java.util.function.Consumer<Boolean> onBounceChanged,
+                       java.util.function.Consumer<Boolean> onRK4Changed) {
         this.onAddPlanet = onAddPlanet;
         this.onClearSimulation = onClearSimulation;
         this.onGravityChanged = onGravityChanged;
         this.onTimeFactorChanged = onTimeFactorChanged;
+        this.onBounceChanged = onBounceChanged;
+        this.onRK4Changed = onRK4Changed;
         
         setupPanel();
     }
@@ -128,12 +138,14 @@ public class ControlPanel extends JPanel {
         radiusField.setMaximumSize(new Dimension(Integer.MAX_VALUE, radiusField.getPreferredSize().height));
         radiusField.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(radiusField);
+        panel.add(Box.createVerticalStrut(5));
         
         // Velocity X and Y on the same line
         JPanel velocityPanel = new JPanel();
         velocityPanel.setLayout(new BoxLayout(velocityPanel, BoxLayout.X_AXIS));
         velocityPanel.setBackground(new Color(50, 50, 50));
         velocityPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        velocityPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, velocityPanel.getPreferredSize().height));
         
         // Velocity X
         JLabel vxLabel = new JLabel("Vx:");
@@ -157,6 +169,7 @@ public class ControlPanel extends JPanel {
         velocityPanel.add(vyField);
         
         panel.add(velocityPanel);
+        panel.add(Box.createVerticalStrut(5));
         
         // Texture
         JLabel textureLabel = new JLabel("Texture:");
@@ -228,6 +241,20 @@ public class ControlPanel extends JPanel {
         periodField.setAlignmentX(Component.LEFT_ALIGNMENT);
         periodField.setToolTipText("Time for one complete rotation (seconds)");
         advancedPanel.add(periodField);
+        advancedPanel.add(Box.createVerticalStrut(10));
+        
+        // Temperature field
+        JLabel temperatureLabel = new JLabel("Temperature (K):");
+        temperatureLabel.setForeground(Color.WHITE);
+        temperatureLabel.setFont(new Font("Sans-serif", Font.PLAIN, 11));
+        temperatureLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        advancedPanel.add(temperatureLabel);
+        
+        temperatureField = new JTextField("300.0");
+        temperatureField.setMaximumSize(new Dimension(Integer.MAX_VALUE, temperatureField.getPreferredSize().height));
+        temperatureField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        temperatureField.setToolTipText("Temperature in Kelvin");
+        advancedPanel.add(temperatureField);
         advancedPanel.add(Box.createVerticalStrut(10));
         
         // Fixed Location checkbox
@@ -327,6 +354,36 @@ public class ControlPanel extends JPanel {
         });
         panel.add(timeFactorValueLabel);
         
+        panel.add(Box.createVerticalStrut(15));
+        
+        // Bounce checkbox
+        bounceCheckBox = new JCheckBox("Bounce");
+        bounceCheckBox.setForeground(Color.WHITE);
+        bounceCheckBox.setBackground(new Color(50, 50, 50));
+        bounceCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+        bounceCheckBox.setToolTipText("When enabled, planets bounce on collision instead of merging");
+        bounceCheckBox.addActionListener(e -> {
+            if (onBounceChanged != null) {
+                onBounceChanged.accept(bounceCheckBox.isSelected());
+            }
+        });
+        panel.add(bounceCheckBox);
+        
+        panel.add(Box.createVerticalStrut(10));
+        
+        // RK4 checkbox
+        rk4CheckBox = new JCheckBox("RK4 Integration");
+        rk4CheckBox.setForeground(Color.WHITE);
+        rk4CheckBox.setBackground(new Color(50, 50, 50));
+        rk4CheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+        rk4CheckBox.setToolTipText("When enabled, uses Runge-Kutta 4th order integration for more accurate physics");
+        rk4CheckBox.addActionListener(e -> {
+            if (onRK4Changed != null) {
+                onRK4Changed.accept(rk4CheckBox.isSelected());
+            }
+        });
+        panel.add(rk4CheckBox);
+        
         panel.add(Box.createVerticalGlue());
         
         return panel;
@@ -345,6 +402,7 @@ public class ControlPanel extends JPanel {
             double vx = Double.parseDouble(vxField.getText());
             double vy = Double.parseDouble(vyField.getText());
             double period = Double.parseDouble(periodField.getText());
+            double temperature = Double.parseDouble(temperatureField.getText());
             String texturePath = getTexturePath();
             String name = nameField.getText().trim(); // Get name, empty string if not provided
             boolean fixedLocation = fixedLocationCheckBox.isSelected();
@@ -352,7 +410,7 @@ public class ControlPanel extends JPanel {
             // Get color based on texture selection (default Blue if no texture)
             Color color = getColorFromTexture();
             
-            return new PlanetData(mass, radius, vx, vy, period, color, texturePath, name, fixedLocation);
+            return new PlanetData(mass, radius, vx, vy, period, temperature, color, texturePath, name, fixedLocation);
         } catch (NumberFormatException e) {
             return null;
         }
@@ -419,17 +477,19 @@ public class ControlPanel extends JPanel {
         public final double vx;
         public final double vy;
         public final double period;  // Period of rotation in seconds
+        public final double temperature;  // Temperature in Kelvin
         public final Color color;
         public final String texturePath;
         public final String name;  // Planet name (empty string if not provided)
         public final boolean fixedLocation;  // If true, creates a PointMass instead of Planet
         
-        public PlanetData(double mass, double radius, double vx, double vy, double period, Color color, String texturePath, String name, boolean fixedLocation) {
+        public PlanetData(double mass, double radius, double vx, double vy, double period, double temperature, Color color, String texturePath, String name, boolean fixedLocation) {
             this.mass = mass;
             this.radius = radius;
             this.vx = vx;
             this.vy = vy;
             this.period = period;
+            this.temperature = temperature;
             this.color = color;
             this.texturePath = texturePath;
             this.name = name;

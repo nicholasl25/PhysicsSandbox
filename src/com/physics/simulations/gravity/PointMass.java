@@ -1,7 +1,6 @@
 package com.physics.simulations.gravity;
 
 import java.awt.Color;
-import java.awt.Graphics2D;
 
 /**
  * PointMass - A stationary planet that doesn't move but exerts gravitational force.
@@ -10,25 +9,13 @@ import java.awt.Graphics2D;
 public class PointMass extends Planet {
     
     /**
-     * Constructor for PointMass with default radius and color
+     * Constructor for PointMass with all parameters.
+     * texturePath and name can be null.
+     * angularVelocity is in the same position as Planet constructor (after radius, before color).
      */
-    public PointMass(double mass, double x, double y) {
-        this(mass, x, y, 10, Color.WHITE, null);
-    }
-
-    /**
-     * Constructor for PointMass with default name
-     */
-    public PointMass(double mass, double x, double y, double radius, Color color) {
-        this(mass, x, y, radius, color, null);
-    }
-
-    /**
-     * Constructor for PointMass with all parameters
-     */
-    public PointMass(double mass, double x, double y, double radius, Color color, String name) {
-        // Call Planet constructor with zero velocity and angular velocity (stationary)
-        super(mass, radius, x, y, 0.0, 0.0, 0.0, color, null, name);
+    public PointMass(double mass, double radius, double x, double y, double angularVelocity, double temperature, Color color, String texturePath, String name) {
+        // Call Planet constructor with zero velocity (stationary), but allow angular velocity
+        super(mass, radius, x, y, 0.0, 0.0, angularVelocity, temperature, color, texturePath, name);
     }
 
     /**
@@ -41,31 +28,34 @@ public class PointMass extends Planet {
 
     /**
      * Override updatePosition - PointMass doesn't move, so position never changes
+     * But still allow rotation if angularVelocity is set
      */
     @Override
     public void updatePosition(double deltaTime, double timeFactor) {
-        // Do nothing - PointMass is stationary
-        // Rotation also doesn't change (angularVelocity is 0)
-    }
-
-    /**
-     * Override draw to use simpler rendering (no texture/rotation needed for stationary mass)
-     */
-    @Override
-    public void draw(Graphics2D g2d) {
-        g2d.setColor(color);
-        int drawX = (int)(x - radius);
-        int drawY = (int)(y - radius);
-        int size = (int)(radius * 2);
-        g2d.fillOval(drawX, drawY, size, size);
-        
-        // Draw yellow circle when selected (same as Planet)
-        if (clicked) {
-            g2d.setStroke(new java.awt.BasicStroke(3.0f));
-            g2d.setColor(Color.YELLOW);
-            g2d.drawOval(drawX-5, drawY-5, size+10, size+10);
+        // Don't update position (x, y) - PointMass is stationary
+        // But still update rotation angle if angularVelocity is set
+        this.rotationAngle += angularVelocity * timeFactor * deltaTime;
+        this.rotationAngle %= (Math.PI * 2);
+        if (this.rotationAngle < 0) {
+            this.rotationAngle += Math.PI * 2;
         }
     }
+    
+    /**
+     * Override updatePositionRK4 - PointMass doesn't move, so position never changes
+     * But still allow rotation if angularVelocity is set
+     */
+    @Override
+    public void updatePositionRK4(double deltaTime, double timeFactor) {
+        // Don't update position (x, y) - PointMass is stationary
+        // But still update rotation angle if angularVelocity is set
+        this.rotationAngle += angularVelocity * timeFactor;
+        this.rotationAngle %= (Math.PI * 2);
+        if (this.rotationAngle < 0) {
+            this.rotationAngle += Math.PI * 2;
+        }
+    }
+
 
     /**
      * Merges with another planet, creating a new PointMass with combined mass.
@@ -79,6 +69,15 @@ public class PointMass extends Planet {
         
         // Use the larger radius
         double newRadius = this.radius > other.radius ? this.radius : other.radius;
+
+        // Texture path is not used for PointMass, so set to null
+        String newTexturePath = null;
+        if (this.radius > other.radius && this.texturePath != null) {
+
+            newTexturePath = this.texturePath;
+        } else {
+            newTexturePath = other.texturePath;
+        }
         
         // Average the colors
         Color c1 = this.color;
@@ -94,6 +93,14 @@ public class PointMass extends Planet {
             : (other.name != null && !other.name.trim().isEmpty() ? other.name : null);
         
         // Position stays at PointMass location (stationary)
-        return new PointMass(combinedMass, this.x, this.y, newRadius, newColor, mergedName);
+        
+        double angularMomentum = 0.4 * (this.radius * this.radius * this.mass * this.angularVelocity 
+            + other.radius * other.radius * other.mass * other.angularVelocity);
+        double newAngularVelocity = 2.5 * angularMomentum / (newRadius * newRadius * combinedMass);
+        
+        // Average the temperatures
+        double newTemperature = (this.temperature * this.mass + other.temperature * other.mass) / combinedMass;
+
+        return new PointMass(combinedMass, newRadius, this.x, this.y, newAngularVelocity, newTemperature, newColor, newTexturePath, mergedName);
     }
 }

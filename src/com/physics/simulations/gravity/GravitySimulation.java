@@ -12,6 +12,10 @@ import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 import java.util.List;
 import java.awt.BasicStroke;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
+import java.io.File;
+import java.io.IOException;
 
 /**
  * Gravity Simulation - Multiple planets interacting through gravitational forces
@@ -23,6 +27,7 @@ public class GravitySimulation extends BaseSimulation {
     /** GLOBAL VARAIBLES OF SIMULATION */
     private double gravitationalConstant = 6000.0;
     private boolean bounce = false;
+    private boolean useRK4 = false;
     private double coefficientOfRestitution = 1.0;
     private double timeFactor = 1.0;
     
@@ -41,6 +46,9 @@ public class GravitySimulation extends BaseSimulation {
     
     /** Zoom level (1.0 = normal, 2.0 = 2x zoom, 0.5 = zoomed out) */
     private double zoomLevel = 1.0;
+    
+    /** Stars background image */
+    private BufferedImage starsBackground;
 
     /** Mouse drag tracking */
     private int lastMouseX = 0;
@@ -53,6 +61,9 @@ public class GravitySimulation extends BaseSimulation {
     /** Pause state */
     private boolean isPaused = false;
     
+    /** Sidebar visibility state */
+    private boolean sidebarVisible = true;
+    
     /** Control panel for adding objects */
     private ControlPanel controlPanel;
     private double clickedWorldX, clickedWorldY;
@@ -63,6 +74,7 @@ public class GravitySimulation extends BaseSimulation {
     private double maxRadius = 100;
     private double maxVelocity = 1000;
     private int maxObjects = 100;
+    private double maxTemperature = 100000;
     private int planetCounter = 1;  // Counter for automatic planet naming
     
     /**
@@ -84,12 +96,17 @@ public class GravitySimulation extends BaseSimulation {
             this::addPlanetFromFields,
             this::clearSimulation,
             this::updateGravity,
-            this::updateTimeFactor
+            this::updateTimeFactor,
+            this::updateBounce,
+            this::updateRK4
         );
         
         // Initialize clicked position to center
         clickedWorldX = 500.0;
         clickedWorldY = 400.0;
+        
+        // Load stars background
+        loadStarsBackground();
         
         // Create a custom drawing panel to handle rendering
         // We'll override its paintComponent() method to draw our planets
@@ -121,7 +138,7 @@ public class GravitySimulation extends BaseSimulation {
             1000.0,                   
             20.0,                      
             500.0, 400.0,        
-            0.0, 0.0, 0.02,             
+            0.0, 0.0, 0.02, 5778.0,             
             Color.YELLOW, 
             "resources/textures/Sun.jpg",
             "Sun"
@@ -132,7 +149,7 @@ public class GravitySimulation extends BaseSimulation {
             50.0,                     
             10.0,                 
             700.0, 400.0,
-            0.0, -80.0, 0.06,
+            0.0, -80.0, 0.06, 288.0,
             Color.BLUE,
             "resources/textures/Earth.jpg",
             "Earth"
@@ -143,7 +160,7 @@ public class GravitySimulation extends BaseSimulation {
     }
 
     private void setupMasses() {
-        PointMass mass = new PointMass(500, 500, 500);
+        PointMass mass = new PointMass(500, 10, 500, 500, 0.0, 300.0, Color.WHITE, null, null);
         planets.add(mass);
     }
     
@@ -268,6 +285,16 @@ public class GravitySimulation extends BaseSimulation {
             JOptionPane.showMessageDialog(this, "Please limit planet velocities to " + maxVelocity + ".", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
+
+        if (data.temperature > maxTemperature) {
+            JOptionPane.showMessageDialog(this, "Please limit planet temperatures to " + maxTemperature + ".", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (planetCounter > maxObjects) {
+            JOptionPane.showMessageDialog(this, "Too many objects currently in simulation.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         
         // Determine planet name: use provided name or generate "Planet #N" or "PointMass #N"
         String planetName;
@@ -282,16 +309,17 @@ public class GravitySimulation extends BaseSimulation {
             planetCounter++;
         }
         
-        Planet newObject;
-        if (data.fixedLocation) {
-            // Create a PointMass (stationary)
-            newObject = new PointMass(data.mass, clickedWorldX, clickedWorldY, 
-                                     data.radius, data.color, planetName);
+            Planet newObject;
+            if (data.fixedLocation) {
+                // Create a PointMass (stationary) - calculate angular velocity from period
+                double angularVelocity = data.getAngularVelocity();
+                newObject = new PointMass(data.mass, data.radius, clickedWorldX, clickedWorldY, 
+                                         angularVelocity, data.temperature, data.color, data.texturePath, planetName);
         } else {
             // Create a regular Planet - calculate angular velocity from period
             double angularVelocity = data.getAngularVelocity();
             newObject = new Planet(data.mass, data.radius, clickedWorldX, clickedWorldY, 
-                                  data.vx, data.vy, angularVelocity, data.color, data.texturePath, planetName);
+                                  data.vx, data.vy, angularVelocity, data.temperature, data.color, data.texturePath, planetName);
         }
         
         planets.add(newObject);
@@ -307,6 +335,28 @@ public class GravitySimulation extends BaseSimulation {
     
     private void updateTimeFactor(Double newTimeFactor) {
         timeFactor = newTimeFactor;
+    }
+    
+    private void updateBounce(Boolean newBounce) {
+        bounce = newBounce;
+    }
+    
+    private void updateRK4(Boolean newRK4) {
+        useRK4 = newRK4;
+    }
+    
+    /**
+     * Loads the stars background image
+     */
+    private void loadStarsBackground() {
+        try {
+            File starsFile = new File("resources/textures/Stars.png");
+            starsBackground = ImageIO.read(starsFile);
+            System.out.println("Loaded stars background: " + starsFile.getPath());
+        } catch (IOException e) {
+            System.err.println("Failed to load stars background: " + e.getMessage());
+            starsBackground = null;
+        }
     }
     
     /**
@@ -407,6 +457,32 @@ public class GravitySimulation extends BaseSimulation {
         
         actionMap.put("zoomIn", zoomInAction);
         actionMap.put("zoomOut", zoomOutAction);
+        
+        // Toggle sidebar action (Tab key)
+        AbstractAction toggleSidebarAction = new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                toggleSidebar();
+            }
+        };
+        
+        KeyStroke tabKey = KeyStroke.getKeyStroke(KeyEvent.VK_TAB, 0);
+        inputMap.put(tabKey, "toggleSidebar");
+        actionMap.put("toggleSidebar", toggleSidebarAction);
+    }
+    
+    /**
+     * Toggles the sidebar (ControlPanel) visibility
+     */
+    private void toggleSidebar() {
+        sidebarVisible = !sidebarVisible;
+        if (sidebarVisible) {
+            add(controlPanel, BorderLayout.EAST);
+        } else {
+            remove(controlPanel);
+        }
+        revalidate();
+        repaint();
     }
     
     
@@ -480,7 +556,12 @@ public class GravitySimulation extends BaseSimulation {
             double accelerationX = totalForceX / planet.mass;
             double accelerationY = totalForceY / planet.mass;
 
-            planet.updateVelocity(accelerationX, accelerationY, deltaTime * timeFactor);
+            // Use RK4 or regular Euler integration based on setting
+            if (useRK4) {
+                planet.updateVelocityRK4(accelerationX, accelerationY, deltaTime * timeFactor);
+            } else {
+                planet.updateVelocity(accelerationX, accelerationY, deltaTime * timeFactor);
+            }
         }
 
         // Apply removals and additions safely after iteration
@@ -489,7 +570,12 @@ public class GravitySimulation extends BaseSimulation {
         
         // Update positions based on velocities (after all velocities are updated)
         for (Planet planet : planets) {
-            planet.updatePosition(deltaTime, timeFactor);
+            // Use RK4 or regular Euler integration based on setting
+            if (useRK4) {
+                planet.updatePositionRK4(deltaTime, timeFactor);
+            } else {
+                planet.updatePosition(deltaTime, timeFactor);
+            }
         }
     }
     
@@ -541,7 +627,7 @@ public class GravitySimulation extends BaseSimulation {
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, 
                                  RenderingHints.VALUE_ANTIALIAS_ON);
             
-            // Draw dark space background
+            // Draw dark space background (fallback if stars image fails to load)
             g2d.setColor(Color.BLACK);
             g2d.fillRect(0, 0, getWidth(), getHeight());
 
@@ -557,6 +643,9 @@ public class GravitySimulation extends BaseSimulation {
             
             // Apply pan
             g2d.translate(panLevelX, panLevelY);
+            
+            // Draw stars background (tiled to cover the visible area)
+            drawStarsBackground(g2d);
             
             // Draw grid background for position reference
             drawGrid(g2d);
@@ -582,7 +671,7 @@ public class GravitySimulation extends BaseSimulation {
                 int infoX = 10;
                 int infoY = 70;
                 int boxWidth = 250;
-                int boxHeight = 190;  // Increased height for name field
+                int boxHeight = 210;  // Increased height for name and temperature fields
 
                 g2d.setColor(new Color(0, 0, 0, 200));
                 g2d.fillRect(infoX, infoY, boxWidth, boxHeight);
@@ -622,6 +711,10 @@ public class GravitySimulation extends BaseSimulation {
                 } else {
                     g2d.drawString("Period (T): Not rotating", infoX + 10, textY);
                 }
+                textY += 20;
+                
+                // Temperature
+                g2d.drawString(String.format("Temperature: %.2f K", selectedPlanet.temperature), infoX + 10, textY);
             }
             
             // Draw info text (always at same screen position, not affected by zoom/pan)
@@ -670,12 +763,60 @@ public class GravitySimulation extends BaseSimulation {
         /**
          * Draws a red X marker at the last click position
          */
+        private void drawStarsBackground(Graphics2D g2d) {
+            if (starsBackground == null) {
+                return;
+            }
+            
+            // Calculate world bounds that are visible on screen
+            // Reverse transform the screen corners to get world bounds
+            double[] topLeft = screenToWorld(0, 0);
+            double[] bottomRight = screenToWorld(getWidth(), getHeight());
+            
+            double worldLeft = topLeft[0];
+            double worldTop = topLeft[1];
+            double worldRight = bottomRight[0];
+            double worldBottom = bottomRight[1];
+            
+            // Calculate how many tiles we need
+            int imgWidth = starsBackground.getWidth();
+            int imgHeight = starsBackground.getHeight();
+            
+            // Calculate starting tile position
+            int startTileX = (int) Math.floor(worldLeft / imgWidth);
+            int startTileY = (int) Math.floor(worldTop / imgHeight);
+            int endTileX = (int) Math.ceil(worldRight / imgWidth);
+            int endTileY = (int) Math.ceil(worldBottom / imgHeight);
+            
+            // Draw tiled background
+            for (int tileY = startTileY; tileY <= endTileY; tileY++) {
+                for (int tileX = startTileX; tileX <= endTileX; tileX++) {
+                    int drawX = tileX * imgWidth;
+                    int drawY = tileY * imgHeight;
+                    g2d.drawImage(starsBackground, drawX, drawY, null);
+                }
+            }
+        }
+        
         private void drawClickMarker(Graphics2D g2d) {
-            // Convert world coordinates to screen coordinates for drawing
+            // Convert world coordinates to screen coordinates using the same transform as drawing
             int centerX = getWidth() / 2;
             int centerY = getHeight() / 2;
-            double screenX = zoomLevel * (clickedWorldX + centerX) - centerX + panLevelX;
-            double screenY = zoomLevel * (clickedWorldY + centerY) - centerY + panLevelY;
+            
+            // Build the same transformation as used in drawing
+            AffineTransform transform = new AffineTransform();
+            transform.translate(centerX, centerY);
+            transform.scale(zoomLevel, zoomLevel);
+            transform.translate(-centerX, -centerY);
+            transform.translate(panLevelX, panLevelY);
+            
+            // Transform world coordinates to screen coordinates
+            double[] src = {clickedWorldX, clickedWorldY};
+            double[] dst = new double[2];
+            transform.transform(src, 0, dst, 0, 1);
+            
+            double screenX = dst[0];
+            double screenY = dst[1];
             
             // Size of the X marker (in screen pixels, stays constant)
             int markerSize = 15;
