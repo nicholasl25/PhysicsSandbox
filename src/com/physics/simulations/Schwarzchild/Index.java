@@ -2,8 +2,8 @@ package com.physics.simulations.Schwarzchild;
 
 public class Index {
     
-    char index;
-    boolean covariant;
+    private char index;
+    private boolean covariant;
 
     public Index(char index, boolean covariant) {
         this.index = index;
