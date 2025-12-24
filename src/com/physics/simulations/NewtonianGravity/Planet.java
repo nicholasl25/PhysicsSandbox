@@ -1,4 +1,4 @@
-package com.physics.simulations.gravity;
+package com.physics.simulations.NewtonianGravity;
 
 import java.awt.Color;
 import java.awt.Graphics2D;

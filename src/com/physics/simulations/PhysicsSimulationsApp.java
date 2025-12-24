@@ -79,8 +79,8 @@ public class PhysicsSimulationsApp extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    com.physics.simulations.gravity.GravitySimulation gravitySim = 
-                        new com.physics.simulations.gravity.GravitySimulation();
+                    com.physics.simulations.NewtonianGravity.GravitySimulation gravitySim = 
+                        new com.physics.simulations.NewtonianGravity.GravitySimulation();
                     gravitySim.start();
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(

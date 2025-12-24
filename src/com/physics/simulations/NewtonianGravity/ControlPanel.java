@@ -1,4 +1,4 @@
-package com.physics.simulations.gravity;
+package com.physics.simulations.NewtonianGravity;
 
 import javax.swing.*;
 import java.awt.*;

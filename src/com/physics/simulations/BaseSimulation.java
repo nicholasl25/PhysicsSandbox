@@ -5,9 +5,6 @@ import javax.swing.JFrame;
 /**
  * Base class for all physics simulations.
  * 
- * This is an ABSTRACT class - notice the "abstract" keyword.
- * It provides a template that all simulations must follow,
- * but doesn't provide the implementation itself.
  * 
  * IMPORTANT: Each simulation is completely independent/disjoint.
  * Simulations are organized by domain (astronomy, fluids, mechanics, etc.)
