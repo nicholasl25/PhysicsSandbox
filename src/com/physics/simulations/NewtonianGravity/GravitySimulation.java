@@ -835,4 +835,5 @@ public class GravitySimulation extends BaseSimulation {
             g2d.drawLine(x - halfSize, y + halfSize, x + halfSize, y - halfSize);
         }
     }
+
 }
