@@ -553,8 +553,8 @@ public class GravitySimulation extends BaseSimulation {
             if (toRemove.contains(planet)) continue;
 
             // Newton's second law: F = ma → a = F/m
-            double accelerationX = totalForceX / planet.mass;
-            double accelerationY = totalForceY / planet.mass;
+            double accelerationX = totalForceX / planet.getMass();
+            double accelerationY = totalForceY / planet.getMass();
 
             // Use RK4 or regular Euler integration based on setting
             if (useRK4) {
@@ -685,22 +685,23 @@ public class GravitySimulation extends BaseSimulation {
                 int textY = infoY + 20;
                 g2d.drawString("=== SELECTED PLANET ===", infoX + 10, textY);
                 textY += 20;
-                g2d.drawString(String.format("Name: %s", selectedPlanet.name != null ? selectedPlanet.name : "Unnamed"), infoX + 10, textY);
+                g2d.drawString(String.format("Name: %s", selectedPlanet.getName() != null ? selectedPlanet.getName() : "Unnamed"), infoX + 10, textY);
                 textY += 20;
-                g2d.drawString(String.format("Mass: %.2f", selectedPlanet.mass), infoX + 10, textY);
+                g2d.drawString(String.format("Mass: %.2f", selectedPlanet.getMass()), infoX + 10, textY);
                 textY += 20;
-                g2d.drawString(String.format("Radius: %.2f", selectedPlanet.radius), infoX + 10, textY);
+                g2d.drawString(String.format("Radius: %.2f", selectedPlanet.getRadius()), infoX + 10, textY);
                 textY += 20;
-                g2d.drawString(String.format("Position: (%.1f, %.1f)", selectedPlanet.x, selectedPlanet.y), 
+                g2d.drawString(String.format("Position: (%.1f, %.1f)", selectedPlanet.getX(), selectedPlanet.getY()), 
                             infoX + 10, textY);
                 textY += 20;
-                g2d.drawString(String.format("Velocity: (%.2f, %.2f)", selectedPlanet.vx, selectedPlanet.vy), 
+                double[] velocity = selectedPlanet.getVelocity();
+                g2d.drawString(String.format("Velocity: (%.2f, %.2f)", velocity[0], velocity[1]), 
                             infoX + 10, textY);
                 textY += 20;
                 
                 // Speed calculation
-                double speed = Math.sqrt(selectedPlanet.vx * selectedPlanet.vx + 
-                                        selectedPlanet.vy * selectedPlanet.vy);
+                double speed = Math.sqrt(velocity[0] * velocity[0] + 
+                                        velocity[1] * velocity[1]);
                 g2d.drawString(String.format("Speed: %.2f", speed), infoX + 10, textY);
                 textY += 20;
                 
@@ -714,7 +715,7 @@ public class GravitySimulation extends BaseSimulation {
                 textY += 20;
                 
                 // Temperature
-                g2d.drawString(String.format("Temperature: %.2f K", selectedPlanet.temperature), infoX + 10, textY);
+                g2d.drawString(String.format("Temperature: %.2f K", selectedPlanet.getTemperature()), infoX + 10, textY);
             }
             
             // Draw info text (always at same screen position, not affected by zoom/pan)

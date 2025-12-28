@@ -29,15 +29,15 @@ import java.awt.RenderingHints;
 
 public class Planet {
     
-    double mass;
-    double radius;
-    double x, y;
-    double vx, vy;
-    Color color;
-    boolean clicked = false;
-    double angularVelocity;
-    double temperature;
-    String name;
+    protected double mass;
+    protected double radius;
+    protected double x, y;
+    protected double vx, vy;
+    protected Color color;
+    protected boolean clicked = false;
+    protected double angularVelocity;
+    protected double temperature;
+    protected String name;
     
     // Texture and rotation fields
     private BufferedImage texture;
@@ -425,6 +425,38 @@ public class Planet {
 
     public double getMass() {
         return this.mass;
+    }
+
+    public double getRadius() {
+        return this.radius;
+    }
+
+    public double getX() {
+        return this.x;
+    }
+
+    public double getY() {
+        return this.y;
+    }
+
+    public Color getColor() {
+        return this.color;
+    }
+
+    public boolean isClicked() {
+        return this.clicked;
+    }
+
+    public double getAngularVelocity() {
+        return this.angularVelocity;
+    }
+
+    public double getTemperature() {
+        return this.temperature;
+    }
+
+    public String getName() {
+        return this.name;
     }
 
     public void setVelocity(double new_vx, double new_vy){
