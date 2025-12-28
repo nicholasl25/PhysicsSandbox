@@ -1,57 +1,38 @@
 package com.physics.simulations.Schwarzchild;
 
+import java.util.ArrayList;
+
 public class Light {
 
-    double G = 1.0;
-    double M = 1.0;
-    
     double[] threeVel;
     double[] threePos;
+    
+    private ArrayList<double[]> trajectory;
+    private SchwarzchildSimulation simulation;
 
-    public Light(double r, double theta, double vr, double vtheta) {
+    public Light(double r, double theta, double vr, double vtheta, SchwarzchildSimulation simulation) {
+        this.simulation = simulation;
         this.threePos = new double[] {0.0, r, theta};
 
-        double f = 1 - 2 * G * M / (r * 2);
-        double vt = Math.sqrt((vr * vr / f * f) + (r * r * vtheta * vtheta));
+        double f = 1 - 2 * simulation.G * simulation.M / r;
+        double spatialVelMagnitude = Math.sqrt(vr * vr + (r * vtheta) * (r * vtheta));
+        double targetMagnitude = Math.sqrt(1 - 2 * simulation.G * simulation.M / r);
+        
+        if (spatialVelMagnitude > 0) {
+            double scale = targetMagnitude / spatialVelMagnitude;
+            vr *= scale;
+            vtheta *= scale;
+        }
+        
+        double vt = Math.sqrt((vr * vr / (f * f)) + (r * r * vtheta * vtheta));
 
-        this.threePos = new double[] {vt, vr, vtheta};
-    }
-
-    public double[][] getMetric() {
-        double[][] metric = new double[3][3];
-        double r = this.threePos[1];
-
-        double f = 1 - 2 * G * M / (r * 2);
-
-        /* Standard Schwarzchild Metric */
-        metric[0][0] = f;
-        metric[1][1] = 1 / f;
-        metric[2][2] = r * r;
-
-        return metric;
-    }
-
-    public double[][][] getChristoffel() {
-        double[][][] chris = new double[3][3][3];
-        double r = threePos[1];
-
-        double f = 1 - 2 * G * M / (r * 2);
-
-
-        /* Standard Christoffel Connection for Schwarzchild Metric */
-        chris[0][0][1] = M / (f * r * r);
-        chris[0][1][0] = M / (f * r * r);
-        chris[1][0][0] = (M * f) /  (r * r);
-        chris[1][1][1] = - M / (f * r * r);
-        chris[1][2][2] = - f * r;
-        chris[1][2][1] = 1/r;
-        chris[1][1][2] = 1/r;
-
-        return chris;
+        this.threeVel = new double[] {vt, vr, vtheta};
+        this.trajectory = new ArrayList<>();
     }
 
     public void updateVel(double timeFactor) {
-        double[][][] chris = this.getChristoffel();
+        double r = threePos[1];
+        double[][][] chris = simulation.getChristoffel(r);
 
         double t_acc = 0;
         double r_acc = 0;
@@ -72,13 +53,27 @@ public class Light {
     }
 
     public void updatePos(double timeFactor) {
-        threePos[0] = threeVel[0] * timeFactor;
-        threePos[1] = threeVel[1] * timeFactor;
-        threePos[2] = threeVel[2] * timeFactor;
+        threePos[0] += threeVel[0] * timeFactor;
+        threePos[1] += threeVel[1] * timeFactor;
+        threePos[2] += threeVel[2] * timeFactor;
+        
+        
+
+        double[] cartPos = getCartesianPos();
+        trajectory.add(new double[] {cartPos[1], cartPos[2]});
+        
+        if (trajectory.size() > 10000) {
+            trajectory.remove(0);
+        }
+    }
+    
+    public ArrayList<double[]> getTrajectory() {
+        return trajectory;
     }
 
     public double norm() {
-        double[][] metric = this.getMetric();
+        double r = threePos[1];
+        double[][] metric = simulation.getMetric(r);
 
         double norm = 0;
         for (int i = 0; i < 3; i++) {
@@ -90,6 +85,31 @@ public class Light {
         return norm;
     }
 
-    
+    public double[] getCartesianVel() {
+        double vt = threeVel[0];
+        double r = threePos[1];
+        double theta = threePos[2];
+
+        double vx = threeVel[1] * Math.cos(theta) - r * threeVel[2] * Math.sin(theta);
+        double vy = threeVel[1] * Math.sin(theta) + r * threeVel[2] * Math.cos(theta);
+
+        return new double[] {vt, vx, vy};
+    }
+
+    public double[] getCartesianPos() {
+        double t = threePos[0];
+        double r = threePos[1];
+        double theta = threePos[2];
+
+        double x = r * Math.cos(theta);
+        double y = r * Math.sin(theta);
+
+        return new double[] {t, x, y};
+    }
+
+    public boolean isOutsideEventHorizon() {
+        return threePos[1] > simulation.getSchwarzchildRadius();
+    }
+
 
 }

@@ -21,7 +21,7 @@ public class PhysicsSimulationsApp extends JFrame {
         // Basic window settings
         setTitle("PhysicsSandbox");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(700, 500);
+        setSize(700, 650);
         setLocationRelativeTo(null); // Center the window on screen
         
         // Create and add the main panel
@@ -109,6 +109,62 @@ public class PhysicsSimulationsApp extends JFrame {
         gbc.gridy = 3;
         gbc.insets = new Insets(20, 20, 20, 20);
         panel.add(descriptionLabel, gbc);
+        
+        // Schwarzschild simulation button
+        JButton schwarzschildButton = new JButton("Schwarzschild Black Hole Simulation");
+        schwarzschildButton.setFont(new Font("Sans-serif", Font.PLAIN, 20));
+        schwarzschildButton.setPreferredSize(new Dimension(350, 70));
+        schwarzschildButton.setBackground(new Color(60, 60, 60));
+        schwarzschildButton.setForeground(Color.WHITE);
+        schwarzschildButton.setOpaque(true);
+        schwarzschildButton.setFocusPainted(false);
+        schwarzschildButton.setBorderPainted(false);
+        schwarzschildButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        schwarzschildButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                schwarzschildButton.setBackground(new Color(80, 80, 80));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                schwarzschildButton.setBackground(new Color(60, 60, 60));
+            }
+        });
+        
+        schwarzschildButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    com.physics.simulations.Schwarzchild.SchwarzchildSimulation schwarzschildSim = 
+                        new com.physics.simulations.Schwarzchild.SchwarzchildSimulation();
+                    schwarzschildSim.initialize();
+                    schwarzschildSim.start();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(
+                        PhysicsSimulationsApp.this,
+                        "Error launching simulation:\n" + ex.getMessage(),
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE
+                    );
+                }
+            }
+        });
+        
+        gbc.gridy = 4;
+        gbc.insets = new Insets(30, 20, 20, 20);
+        panel.add(schwarzschildButton, gbc);
+        
+        // Schwarzschild description
+        JLabel schwarzschildDescriptionLabel = new JLabel(
+            "<html><div style='text-align: center; width: 350px;'>" +
+            "Simulate light rays and geodesics around a Schwarzschild black hole.<br>" +
+            "Visualize general relativity effects using tensor calculus." +
+            "</div></html>"
+        );
+        schwarzschildDescriptionLabel.setFont(new Font("Sans-serif", Font.PLAIN, 13));
+        schwarzschildDescriptionLabel.setForeground(new Color(100, 100, 100));
+        gbc.gridy = 5;
+        gbc.insets = new Insets(20, 20, 20, 20);
+        panel.add(schwarzschildDescriptionLabel, gbc);
         
         return panel;
     }
