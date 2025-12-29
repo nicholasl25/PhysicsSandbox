@@ -1,6 +1,6 @@
-package com.physics.simulations.Schwarzchild;
+package simulations.Schwarzchild;
 
-import com.physics.simulations.BaseSimulation;
+import simulations.BaseSimulation;
 
 /**
  * Simulation of light rays (null geodesics) in Schwarzschild spacetime.
@@ -31,7 +31,7 @@ public class SchwarzchildSimulation extends BaseSimulation {
     private boolean isPaused = false;
     private Light selectedLight = null;
     
-    public double G = 1.0;
+    public double G = 0.3;
     public double M = 1.0;
     
     // ============================================================================
@@ -95,7 +95,7 @@ public class SchwarzchildSimulation extends BaseSimulation {
         
         double startX = -8.0;
         double[] startYs = {-3.0, -1.5, 0.0, 1.5, 3.0};
-        double[] angles = {-0.2, -0.1, 0.0, 0.1, -0.5};
+        double[] angles = {4.0, 3.0, 2.0, -1.0, 0.8};
         
         for (int i = 0; i < startYs.length; i++) {
             double startY = startYs[i];

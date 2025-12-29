@@ -1,4 +1,4 @@
-package com.physics.simulations;
+package simulations;
 
 import javax.swing.JFrame;
 

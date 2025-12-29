@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhysicsSandbox</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">PhysicsSandbox</h1>
+        
+        <div class="simulations">
+            <div class="sim-card" onclick="launchSimulation('gravity')">
+                <h2>2D Gravity Simulation</h2>
+                <ul>
+                    <li>Newtonian Gravity Simulation (2D only)</li>
+                    <li>N-body gravitational interactions with collision detection</li>
+                    <li>Textured rotating planets with NASA imagery</li>
+                </ul>
+            </div>
+            
+            <div class="sim-card" onclick="launchSimulation('schwarzschild')">
+                <h2>Schwarzschild Black Hole Simulation</h2>
+                <ul>
+                    <li>Light ray geodesics in Schwarzschild spacetime</li>
+                    <li>Tensor algebra engine with Einstein summation</li>
+                    <li>Visualization of gravitational lensing effects</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
+

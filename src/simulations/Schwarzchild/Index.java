@@ -1,4 +1,4 @@
-package com.physics.simulations.Schwarzchild;
+package simulations.Schwarzchild;
 
 public class Index {
     

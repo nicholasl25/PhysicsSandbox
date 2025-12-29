@@ -1,6 +1,6 @@
-package com.physics.simulations.NewtonianGravity;
+package simulations.NewtonianGravity;
 
-import com.physics.simulations.BaseSimulation;
+import simulations.BaseSimulation;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
