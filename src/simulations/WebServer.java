@@ -20,7 +20,8 @@ public class WebServer {
         server = HttpServer.create(new InetSocketAddress(PORT), 0);
         
         server.createContext("/", new StaticFileHandler());
-        server.createContext("/api/launch/gravity", new LaunchGravityHandler());
+        server.createContext("/api/launch/gravity2d", new LaunchGravity2DHandler());
+        server.createContext("/api/launch/gravity3d", new LaunchGravity3DHandler());
         server.createContext("/api/launch/schwarzschild", new LaunchSchwarzschildHandler());
         
         server.setExecutor(null);
@@ -89,7 +90,7 @@ public class WebServer {
         }
     }
     
-    private static class LaunchGravityHandler implements HttpHandler {
+    private static class LaunchGravity2DHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             if (!exchange.getRequestMethod().equals("POST")) {
@@ -100,8 +101,34 @@ public class WebServer {
             try {
                 SwingUtilities.invokeLater(() -> {
                     try {
-                        simulations.NewtonianGravity.GravitySimulation sim = 
-                            new simulations.NewtonianGravity.GravitySimulation();
+                        simulations.NewtonianGravity.Gravity2D.Gravity2DSimulation sim = 
+                            new simulations.NewtonianGravity.Gravity2D.Gravity2DSimulation();
+                        sim.start();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
+                
+                sendResponse(exchange, 200, "OK");
+            } catch (Exception e) {
+                sendError(exchange, 500, e.getMessage());
+            }
+        }
+    }
+    
+    private static class LaunchGravity3DHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!exchange.getRequestMethod().equals("POST")) {
+                sendError(exchange, 405, "Method not allowed");
+                return;
+            }
+            
+            try {
+                SwingUtilities.invokeLater(() -> {
+                    try {
+                        simulations.NewtonianGravity.Gravity3D.Gravity3DSimulation sim = 
+                            new simulations.NewtonianGravity.Gravity3D.Gravity3DSimulation();
                         sim.start();
                     } catch (Exception e) {
                         e.printStackTrace();

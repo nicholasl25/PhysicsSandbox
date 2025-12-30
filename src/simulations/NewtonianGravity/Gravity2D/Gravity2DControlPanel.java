@@ -1,4 +1,4 @@
-package simulations.NewtonianGravity;
+package simulations.NewtonianGravity.Gravity2D;
 
 import simulations.BaseControlPanel;
 import javax.swing.*;
@@ -9,7 +9,7 @@ import java.awt.event.KeyEvent;
  * Control panel for the gravity simulation.
  * Handles user input for adding planets and point masses.
  */
-public class ControlPanel extends BaseControlPanel {
+public class Gravity2DControlPanel extends BaseControlPanel {
     // Input fields
     private JTextField massField, radiusField, vxField, vyField, periodField, nameField, temperatureField;
     private JComboBox<String> textureCombo;
@@ -38,7 +38,7 @@ public class ControlPanel extends BaseControlPanel {
      * @param onBounceChanged Called when bounce checkbox changes
      * @param onRK4Changed Called when RK4 checkbox changes
      */
-    public ControlPanel(Runnable onAddPlanet, Runnable onClearSimulation, 
+    public Gravity2DControlPanel(Runnable onAddPlanet, Runnable onClearSimulation, 
                        java.util.function.Consumer<Double> onGravityChanged,
                        java.util.function.Consumer<Double> onTimeFactorChanged,
                        java.util.function.Consumer<Boolean> onBounceChanged,

@@ -22,7 +22,7 @@ public class PointMass extends Planet {
      * Override updateVelocity - PointMass doesn't move, so velocity never changes
      */
     @Override
-    public void updateVelocity(double ax, double ay, double deltaTime) {
+    public void updateVelocity(Vector accel, double deltaTime) {
         // Do nothing - PointMass is stationary
     }
 
@@ -41,22 +41,6 @@ public class PointMass extends Planet {
         }
     }
     
-    /**
-     * Override updatePositionRK4 - PointMass doesn't move, so position never changes
-     * But still allow rotation if angularVelocity is set
-     */
-    @Override
-    public void updatePositionRK4(double deltaTime, double timeFactor) {
-        // Don't update position (x, y) - PointMass is stationary
-        // But still update rotation angle if angularVelocity is set
-        this.rotationAngle += angularVelocity * timeFactor;
-        this.rotationAngle %= (Math.PI * 2);
-        if (this.rotationAngle < 0) {
-            this.rotationAngle += Math.PI * 2;
-        }
-    }
-
-
     /**
      * Merges with another planet, creating a new PointMass with combined mass.
      * PointMass always wins in a merge (remains stationary).
@@ -101,6 +85,6 @@ public class PointMass extends Planet {
         // Average the temperatures
         double newTemperature = (this.temperature * this.mass + other.temperature * other.mass) / combinedMass;
 
-        return new PointMass(combinedMass, newRadius, this.x, this.y, newAngularVelocity, newTemperature, newColor, newTexturePath, mergedName);
+        return new PointMass(combinedMass, newRadius, this.pos.get(0), this.pos.get(1), newAngularVelocity, newTemperature, newColor, newTexturePath, mergedName);
     }
 }

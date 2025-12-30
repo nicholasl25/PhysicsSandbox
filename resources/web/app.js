@@ -1,3 +1,21 @@
+function toggleDropdown(id) {
+    const content = document.getElementById(id + '-content');
+    const options = document.getElementById(id + '-options');
+    const arrow = document.getElementById(id + '-arrow');
+    
+    const isExpanded = content.classList.contains('expanded');
+    
+    if (isExpanded) {
+        content.classList.remove('expanded');
+        options.classList.remove('expanded');
+        arrow.textContent = '▼';
+    } else {
+        content.classList.add('expanded');
+        options.classList.add('expanded');
+        arrow.textContent = '▲';
+    }
+}
+
 async function launchSimulation(type) {
     try {
         const response = await fetch(`/api/launch/${type}`, {

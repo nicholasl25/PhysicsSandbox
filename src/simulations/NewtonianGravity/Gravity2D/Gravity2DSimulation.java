@@ -1,6 +1,10 @@
-package simulations.NewtonianGravity;
+package simulations.NewtonianGravity.Gravity2D;
 
 import simulations.BaseSimulation;
+import simulations.NewtonianGravity.Planet;
+import simulations.NewtonianGravity.PointMass;
+import simulations.NewtonianGravity.RK4Planet;
+import simulations.NewtonianGravity.Vector;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -18,9 +22,9 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * Gravity Simulation - Multiple planets interacting through gravitational forces
+ * 2D Gravity Simulation - Multiple planets interacting through gravitational forces
  */
-public class GravitySimulation extends BaseSimulation {
+public class Gravity2DSimulation extends BaseSimulation {
     /** List of all planets/point masses in the simulation */
     private List<Planet> planets = new ArrayList<>();
     
@@ -65,7 +69,7 @@ public class GravitySimulation extends BaseSimulation {
     private boolean sidebarVisible = true;
     
     /** Control panel for adding objects */
-    private ControlPanel controlPanel;
+    private Gravity2DControlPanel controlPanel;
     private double clickedWorldX, clickedWorldY;
 
     private Planet clickedPlanet = null;
@@ -92,7 +96,7 @@ public class GravitySimulation extends BaseSimulation {
         planets = new ArrayList<>();
         
         // Create control panel
-        controlPanel = new ControlPanel(
+        controlPanel = new Gravity2DControlPanel(
             this::addPlanetFromFields,
             this::clearSimulation,
             this::updateGravity,
@@ -265,7 +269,7 @@ public class GravitySimulation extends BaseSimulation {
      * Adds a planet using values from the control panel
      */
     private void addPlanetFromFields() {
-        ControlPanel.PlanetData data = controlPanel.getPlanetData();
+        Gravity2DControlPanel.PlanetData data = controlPanel.getPlanetData();
         if (data == null) {
             JOptionPane.showMessageDialog(this, "Please enter valid numbers!", "Error", JOptionPane.ERROR_MESSAGE);
             return;
@@ -316,10 +320,15 @@ public class GravitySimulation extends BaseSimulation {
                 newObject = new PointMass(data.mass, data.radius, clickedWorldX, clickedWorldY, 
                                          angularVelocity, data.temperature, data.color, data.texturePath, planetName);
         } else {
-            // Create a regular Planet - calculate angular velocity from period
+            // Create a Planet or RK4Planet based on integration method
             double angularVelocity = data.getAngularVelocity();
-            newObject = new Planet(data.mass, data.radius, clickedWorldX, clickedWorldY, 
-                                  data.vx, data.vy, angularVelocity, data.temperature, data.color, data.texturePath, planetName);
+            if (useRK4) {
+                newObject = new RK4Planet(data.mass, data.radius, clickedWorldX, clickedWorldY, 
+                                          data.vx, data.vy, angularVelocity, data.temperature, data.color, data.texturePath, planetName);
+            } else {
+                newObject = new Planet(data.mass, data.radius, clickedWorldX, clickedWorldY, 
+                                      data.vx, data.vy, angularVelocity, data.temperature, data.color, data.texturePath, planetName);
+            }
         }
         
         planets.add(newObject);
@@ -544,7 +553,8 @@ public class GravitySimulation extends BaseSimulation {
                 }
 
                 // Compute gravitational force
-                double[] force = planet.gravitationalForceFrom(other, gravitationalConstant);
+                Vector forceVec = planet.gravitationalForceFrom(other, gravitationalConstant);
+                double[] force = forceVec.getData();
                 totalForceX += force[0];
                 totalForceY += force[1];
             }
@@ -556,12 +566,7 @@ public class GravitySimulation extends BaseSimulation {
             double accelerationX = totalForceX / planet.getMass();
             double accelerationY = totalForceY / planet.getMass();
 
-            // Use RK4 or regular Euler integration based on setting
-            if (useRK4) {
-                planet.updateVelocityRK4(accelerationX, accelerationY, deltaTime * timeFactor);
-            } else {
-                planet.updateVelocity(accelerationX, accelerationY, deltaTime * timeFactor);
-            }
+            planet.updateVelocity(new Vector(new double[]{accelerationX, accelerationY}), deltaTime * timeFactor);
         }
 
         // Apply removals and additions safely after iteration
@@ -570,12 +575,7 @@ public class GravitySimulation extends BaseSimulation {
         
         // Update positions based on velocities (after all velocities are updated)
         for (Planet planet : planets) {
-            // Use RK4 or regular Euler integration based on setting
-            if (useRK4) {
-                planet.updatePositionRK4(deltaTime, timeFactor);
-            } else {
-                planet.updatePosition(deltaTime, timeFactor);
-            }
+            planet.updatePosition(deltaTime, timeFactor);
         }
     }
     
@@ -691,10 +691,11 @@ public class GravitySimulation extends BaseSimulation {
                 textY += 20;
                 g2d.drawString(String.format("Radius: %.2f", selectedPlanet.getRadius()), infoX + 10, textY);
                 textY += 20;
-                g2d.drawString(String.format("Position: (%.1f, %.1f)", selectedPlanet.getX(), selectedPlanet.getY()), 
+                double[] pos = selectedPlanet.getPositionArray();
+                g2d.drawString(String.format("Position: (%.1f, %.1f)", pos[0], pos[1]), 
                             infoX + 10, textY);
                 textY += 20;
-                double[] velocity = selectedPlanet.getVelocity();
+                double[] velocity = selectedPlanet.getVelocityArray();
                 g2d.drawString(String.format("Velocity: (%.2f, %.2f)", velocity[0], velocity[1]), 
                             infoX + 10, textY);
                 textY += 20;
