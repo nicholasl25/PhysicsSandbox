@@ -32,7 +32,6 @@ public class SchwarzchildSimulation extends BaseSimulation {
     private Light selectedLight = null;
     
     private SchwarzchildControlPanel controlPanel;
-    private boolean sidebarVisible = true;
     
     public double G = 0.5;
     public double M = 1.0;
@@ -122,6 +121,9 @@ public class SchwarzchildSimulation extends BaseSimulation {
             this::updateG,
             this::updateM
         );
+        
+        // Control panel starts expanded
+        controlPanel.setExpanded(true);
         
         // Set initial slider values
         controlPanel.setCValue(c);
@@ -271,15 +273,10 @@ public class SchwarzchildSimulation extends BaseSimulation {
     }
     
     /**
-     * Toggles the sidebar (ControlPanel) visibility.
+     * Toggles the sidebar (ControlPanel) collapse/expand state.
      */
     private void toggleSidebar() {
-        sidebarVisible = !sidebarVisible;
-        if (sidebarVisible) {
-            add(controlPanel, BorderLayout.EAST);
-        } else {
-            remove(controlPanel);
-        }
+        controlPanel.setExpanded(!controlPanel.isExpanded());
         revalidate();
         repaint();
     }

@@ -56,6 +56,7 @@ public class Gravity2DControlPanel extends BaseControlPanel {
      */
     @Override
     protected void setupContent() {
+        JPanel contentPanel = getContentPanel();
         
         // Create tabbed pane for Add and Settings
         JTabbedPane tabbedPane = new JTabbedPane();
@@ -70,7 +71,7 @@ public class Gravity2DControlPanel extends BaseControlPanel {
         JPanel settingsPanel = createSettingsPanel();
         tabbedPane.addTab("Settings", settingsPanel);
         
-        add(tabbedPane, BorderLayout.CENTER);
+        contentPanel.add(tabbedPane, BorderLayout.CENTER);
         
         // Clear button at bottom
         JPanel bottomPanel = new JPanel();
@@ -89,7 +90,7 @@ public class Gravity2DControlPanel extends BaseControlPanel {
         removeSpacebarActivation(clearSimulationButton);
         bottomPanel.add(clearSimulationButton);
         
-        add(bottomPanel, BorderLayout.SOUTH);
+        contentPanel.add(bottomPanel, BorderLayout.SOUTH);
     }
     
     /**

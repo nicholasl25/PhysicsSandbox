@@ -36,6 +36,8 @@ public class SchwarzchildControlPanel extends BaseControlPanel {
      */
     @Override
     protected void setupContent() {
+        JPanel contentPanel = getContentPanel();
+        
         // Main panel with sliders
         JPanel mainPanel = createMainPanel();
         
@@ -74,7 +76,7 @@ public class SchwarzchildControlPanel extends BaseControlPanel {
         // Add vertical glue to push content to top
         mainPanel.add(Box.createVerticalGlue());
         
-        add(mainPanel, BorderLayout.CENTER);
+        contentPanel.add(mainPanel, BorderLayout.CENTER);
     }
     
     /**

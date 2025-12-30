@@ -66,7 +66,6 @@ public class Gravity2DSimulation extends BaseSimulation {
     private boolean isPaused = false;
     
     /** Sidebar visibility state */
-    private boolean sidebarVisible = true;
     
     /** Control panel for adding objects */
     private Gravity2DControlPanel controlPanel;
@@ -104,6 +103,9 @@ public class Gravity2DSimulation extends BaseSimulation {
             this::updateBounce,
             this::updateRK4
         );
+        
+        // Connect toggle button to sidebar toggle
+        controlPanel.setExpanded(true);
         
         // Initialize clicked position to center
         clickedWorldX = 500.0;
@@ -481,15 +483,10 @@ public class Gravity2DSimulation extends BaseSimulation {
     }
     
     /**
-     * Toggles the sidebar (ControlPanel) visibility
+     * Toggles the sidebar (ControlPanel) collapse/expand state
      */
     private void toggleSidebar() {
-        sidebarVisible = !sidebarVisible;
-        if (sidebarVisible) {
-            add(controlPanel, BorderLayout.EAST);
-        } else {
-            remove(controlPanel);
-        }
+        controlPanel.setExpanded(!controlPanel.isExpanded());
         revalidate();
         repaint();
     }
