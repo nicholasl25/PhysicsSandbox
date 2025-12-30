@@ -1,5 +1,6 @@
 package simulations.NewtonianGravity;
 
+import simulations.BaseControlPanel;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
@@ -8,7 +9,7 @@ import java.awt.event.KeyEvent;
  * Control panel for the gravity simulation.
  * Handles user input for adding planets and point masses.
  */
-public class ControlPanel extends JPanel {
+public class ControlPanel extends BaseControlPanel {
     // Input fields
     private JTextField massField, radiusField, vxField, vyField, periodField, nameField, temperatureField;
     private JComboBox<String> textureCombo;
@@ -48,19 +49,13 @@ public class ControlPanel extends JPanel {
         this.onTimeFactorChanged = onTimeFactorChanged;
         this.onBounceChanged = onBounceChanged;
         this.onRK4Changed = onRK4Changed;
-        
-        setupPanel();
     }
     
     /**
      * Sets up the control panel UI.
      */
-    private void setupPanel() {
-        setLayout(new BorderLayout());
-        setBackground(new Color(50, 50, 50));
-        
-        // Set preferred width
-        setPreferredSize(new Dimension(280, 0));
+    @Override
+    protected void setupContent() {
         
         // Create tabbed pane for Add and Settings
         JTabbedPane tabbedPane = new JTabbedPane();
@@ -455,7 +450,9 @@ public class ControlPanel extends JPanel {
      * This prevents the button from being activated when spacebar is pressed,
      * ensuring spacebar is reserved for pause/resume in the simulation.
      */
-    private void removeSpacebarActivation(JButton button) {
+    @Override
+    protected void removeSpacebarActivation(JButton button) {
+        super.removeSpacebarActivation(button);
         // Remove spacebar from button's input map
         InputMap inputMap = button.getInputMap(JComponent.WHEN_FOCUSED);
         KeyStroke spaceKey = KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0);

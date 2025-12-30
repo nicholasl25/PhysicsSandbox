@@ -21,9 +21,23 @@ public class Light {
         this.simulation = simulation;
         this.threePos = new double[] {0.0, r, theta};
 
-        double f = 1 - 2 * simulation.G * simulation.M / r;
+        double G = simulation.G;
+        double M = simulation.M;
+        double c = simulation.c;
+        double f = 1 - 2 * G * M / (c * c * r);
+        
+        if (f <= 0) {
+            System.err.println("Warning: f <= 0 at r = " + r + ", f = " + f);
+            f = 0.001; // Prevent division by zero
+        }
+        
         double spatialVelMagnitude = Math.sqrt(vr * vr + (r * vtheta) * (r * vtheta));
-        double targetMagnitude = Math.sqrt(1 - 2 * simulation.G * simulation.M / r);
+        double targetMagnitude = Math.sqrt(1 - 2 * G * M / (c * c * r));
+        
+        if (targetMagnitude <= 0 || Double.isNaN(targetMagnitude)) {
+            System.err.println("Warning: Invalid targetMagnitude at r = " + r);
+            targetMagnitude = 0.1;
+        }
         
         if (spatialVelMagnitude > 0) {
             double scale = targetMagnitude / spatialVelMagnitude;
@@ -31,7 +45,14 @@ public class Light {
             vtheta *= scale;
         }
         
-        double vt = Math.sqrt((vr * vr / (f * f)) + (r * r * vtheta * vtheta));
+        double vtSquared = (vr * vr) / (f * f * c * c) + (r * r * vtheta * vtheta) / (f * c * c);
+        
+        if (vtSquared < 0 || Double.isNaN(vtSquared)) {
+            System.err.println("Warning: Invalid vtSquared = " + vtSquared + " at r = " + r + ", f = " + f);
+            vtSquared = 0.1;
+        }
+        
+        double vt = Math.sqrt(vtSquared);
 
         this.threeVel = new double[] {vt, vr, vtheta};
         this.trajectory = new ArrayList<>();
@@ -60,14 +81,17 @@ public class Light {
         threeVel[2] += timeFactor * theta_acc;
         
         // Renormalize to enforce null constraint: g_μν u^μ u^ν = 0
-        double f = 1 - 2 * simulation.G * simulation.M / r;
+        double G = simulation.G;
+        double M = simulation.M;
+        double c = simulation.c;
+        double f = 1 - 2 * G * M / (c * c * r);
         double vr = threeVel[1];
         double vtheta = threeVel[2];
         
         // Solve for vt from null condition: -f(vt)² + (1/f)(vr)² + r²(vtheta)² = 0
         double spatialTerm = (vr * vr / f) + (r * r * vtheta * vtheta);
         if (spatialTerm >= 0 && f > 0) {
-            threeVel[0] = Math.sqrt(spatialTerm / f);
+            threeVel[0] = Math.sqrt(spatialTerm / (f * c * c));
         }
     }
 
@@ -131,7 +155,7 @@ public class Light {
     }
 
     /**
-     * Checks if the light ray is outside the event horizon (r > 2GM).
+     * Checks if the light ray is outside the event horizon (r > 2GM/c^2).
      */
     public boolean isOutsideEventHorizon() {
         return threePos[1] >= simulation.getSchwarzchildRadius();

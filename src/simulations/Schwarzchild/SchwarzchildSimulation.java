@@ -31,8 +31,12 @@ public class SchwarzchildSimulation extends BaseSimulation {
     private boolean isPaused = false;
     private Light selectedLight = null;
     
-    public double G = 0.3;
+    private SchwarzchildControlPanel controlPanel;
+    private boolean sidebarVisible = true;
+    
+    public double G = 0.5;
     public double M = 1.0;
+    public double c = 1.0;
     
     // ============================================================================
     // SCHWARZSCHILD-SPECIFIC METHODS
@@ -40,18 +44,23 @@ public class SchwarzchildSimulation extends BaseSimulation {
     // For a generic GR simulation, these would be abstract or implemented differently.
     // ============================================================================
     
+    private double f(double r) {
+        return 1.0 - (2.0 * G * M) / (c * c * r);
+    }
+
+
     /**
      * Returns the Schwarzschild metric tensor at radius r.
      */
     public double[][] getMetric(double r) {
-        double[][] metric = new double[3][3];
-        double f = 1 - 2 * G * M / r;
-        
-        metric[0][0] = -f;
-        metric[1][1] = 1 / f;
-        metric[2][2] = r * r;
-        
-        return metric;
+        double[][] g = new double[3][3];
+        double f = f(r);
+
+        g[0][0] = -f * c * c; // g_tt
+        g[1][1] = 1.0 / f;    // g_rr
+        g[2][2] = r * r;      // g_phiphi
+
+        return g;
     }
     
     /**
@@ -59,16 +68,28 @@ public class SchwarzchildSimulation extends BaseSimulation {
      */
     public double[][][] getChristoffel(double r) {
         double[][][] chris = new double[3][3][3];
-        double f = 1 - 2 * G * M / r;
-        
-        chris[0][0][1] = M / (f * r * r);
-        chris[0][1][0] = M / (f * r * r);
-        chris[1][0][0] = (M * f) / (r * r);
-        chris[1][1][1] = -M / (f * r * r);
+        double f = f(r);
+
+        // Useful combination
+        double A = (G * M) / (c * c * r * r * f); // = GM/(c^2 r^2 f)
+
+        // Γ^t_{tr} = Γ^t_{rt} = GM/(c^2 r^2 f)
+        chris[0][0][1] = A;
+        chris[0][1][0] = A;
+
+        // Γ^r_{tt} = f * GM / r^2
+        chris[1][0][0] = f * (G * M) / (r * r);
+
+        // Γ^r_{rr} = - GM/(c^2 r^2 f)
+        chris[1][1][1] = -A;
+
+        // Γ^r_{phi phi} = - f r
         chris[1][2][2] = -f * r;
-        chris[2][2][1] = 1/r;
-        chris[2][1][2] = 1/r;
-        
+
+        // Γ^phi_{r phi} = Γ^phi_{phi r} = 1/r
+        chris[2][1][2] = 1.0 / r;
+        chris[2][2][1] = 1.0 / r;
+
         return chris;
     }
     
@@ -76,7 +97,7 @@ public class SchwarzchildSimulation extends BaseSimulation {
      * Returns the Schwarzschild radius (event horizon): 2GM.
      */
     public double getSchwarzchildRadius() {
-        return 2 * G * M;
+        return 2 * G * M / (c * c);
     }
     
     // ============================================================================
@@ -93,29 +114,26 @@ public class SchwarzchildSimulation extends BaseSimulation {
         
         lightRays = new ArrayList<>();
         
-        double startX = -8.0;
-        double[] startYs = {-3.0, -1.5, 0.0, 1.5, 3.0};
-        double[] angles = {4.0, 3.0, 2.0, -1.0, 0.8};
+        initializeLightRays();
         
-        for (int i = 0; i < startYs.length; i++) {
-            double startY = startYs[i];
-            
-            double r = Math.sqrt(startX * startX + startY * startY);
-            double theta = Math.atan2(startY, startX);
-            
-            double directionAngle = angles[i];
-            double spatialVelMagnitude = Math.sqrt(1 - 2 * G * M / r);
-            
-            // Ingoing radial null geodesic (vr < 0)
-            double vr = -1 * spatialVelMagnitude * Math.cos(directionAngle);
-            double vtheta = spatialVelMagnitude * Math.sin(directionAngle) / r;
-            
-            Light light = new Light(r, theta, vr, vtheta, this);
-            lightRays.add(light);
-        }
+        // Create control panel
+        controlPanel = new SchwarzchildControlPanel(
+            this::updateC,
+            this::updateG,
+            this::updateM
+        );
+        
+        // Set initial slider values
+        controlPanel.setCValue(c);
+        controlPanel.setGValue(G);
+        controlPanel.setMValue(M);
         
         drawingPanel = new DrawingPanel();
-        add(drawingPanel);
+        
+        // Set up layout
+        setLayout(new BorderLayout());
+        add(controlPanel, BorderLayout.EAST);
+        add(drawingPanel, BorderLayout.CENTER);
         
         setupMouseListeners();
         setupKeyboardListeners();
@@ -180,6 +198,90 @@ public class SchwarzchildSimulation extends BaseSimulation {
                 drawingPanel.repaint();
             }
         });
+        
+        // Toggle sidebar action (Tab key)
+        AbstractAction toggleSidebarAction = new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                toggleSidebar();
+            }
+        };
+        
+        KeyStroke tabKey = KeyStroke.getKeyStroke(KeyEvent.VK_TAB, 0);
+        inputMap.put(tabKey, "toggleSidebar");
+        actionMap.put("toggleSidebar", toggleSidebarAction);
+    }
+    
+    /**
+     * Initializes light rays with current constants.
+     */
+    private void initializeLightRays() {
+        lightRays.clear();
+        
+        double startX = -8.0;
+        double[] startYs = {-3.0, -1.5, 0.0, 1.5, 3.0};
+        double[] angles = {0.0, 0.0, 0.0, -0.7, 0.5};
+        
+        for (int i = 0; i < startYs.length; i++) {
+            double startY = startYs[i];
+            
+            double r = Math.sqrt(startX * startX + startY * startY);
+            double theta = Math.atan2(startY, startX);
+            
+            double directionAngle = angles[i];
+            double spatialVelMagnitude = Math.sqrt(1 - 2 * G * M / (c * c * r));
+            
+            // Ingoing radial null geodesic (vr < 0)
+            double vr = -1 * spatialVelMagnitude * Math.cos(directionAngle);
+            double vtheta = spatialVelMagnitude * Math.sin(directionAngle) / r;
+            
+            Light light = new Light(r, theta, vr, vtheta, this);
+            lightRays.add(light);
+        }
+    }
+    
+    /**
+     * Updates the speed of light constant and reinitializes light rays.
+     */
+    private void updateC(double newC) {
+        c = newC;
+        initializeLightRays();
+        selectedLight = null;
+        drawingPanel.repaint();
+    }
+    
+    /**
+     * Updates the gravitational constant and reinitializes light rays.
+     */
+    private void updateG(double newG) {
+        G = newG;
+        initializeLightRays();
+        selectedLight = null;
+        drawingPanel.repaint();
+    }
+    
+    /**
+     * Updates the black hole mass and reinitializes light rays.
+     */
+    private void updateM(double newM) {
+        M = newM;
+        initializeLightRays();
+        selectedLight = null;
+        drawingPanel.repaint();
+    }
+    
+    /**
+     * Toggles the sidebar (ControlPanel) visibility.
+     */
+    private void toggleSidebar() {
+        sidebarVisible = !sidebarVisible;
+        if (sidebarVisible) {
+            add(controlPanel, BorderLayout.EAST);
+        } else {
+            remove(controlPanel);
+        }
+        revalidate();
+        repaint();
     }
     
     private double[] screenToWorld(int screenX, int screenY) {

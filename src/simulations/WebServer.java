@@ -44,7 +44,15 @@ public class WebServer {
                 path = "/index.html";
             }
             
-            Path filePath = Paths.get("resources/web" + path);
+            Path filePath = null;
+            
+            // Check if it's a texture file
+            if (path.startsWith("/textures/")) {
+                filePath = Paths.get("resources" + path);
+            } else {
+                // Otherwise, serve from web directory
+                filePath = Paths.get("resources/web" + path);
+            }
             
             if (!Files.exists(filePath) || Files.isDirectory(filePath)) {
                 send404(exchange);
@@ -67,6 +75,8 @@ public class WebServer {
             if (path.endsWith(".css")) return "text/css";
             if (path.endsWith(".js")) return "application/javascript";
             if (path.endsWith(".json")) return "application/json";
+            if (path.endsWith(".png")) return "image/png";
+            if (path.endsWith(".jpg") || path.endsWith(".jpeg")) return "image/jpeg";
             return "application/octet-stream";
         }
         
