@@ -8,6 +8,8 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.lwjgl.opengl.GL11.*;
+
 /**
  * 3D Gravity Simulation - Multiple planets interacting through gravitational forces in 3D space
  */
@@ -28,8 +30,8 @@ public class Gravity3DSimulation extends BaseSimulation {
     /** Time step for physics calculations (in seconds) */
     private static final double DELTA_TIME = 1.0 / 60.0; // 60 FPS
     
-    /** Drawing panel - custom component for rendering */
-    private DrawingPanel drawingPanel;
+    /** OpenGL panel for 3D rendering */
+    private GLPanel glPanel;
     
     /** Pause state */
     private boolean isPaused = false;
@@ -49,13 +51,32 @@ public class Gravity3DSimulation extends BaseSimulation {
         // TODO: Initialize 3D control panel
         // controlPanel = new Gravity3DControlPanel(...);
         
-        drawingPanel = new DrawingPanel();
+        // Create and initialize OpenGL panel
+        glPanel = new GLPanel();
+        glPanel.setRenderCallback(this::render3D);
         
         setLayout(new BorderLayout());
         // add(controlPanel, BorderLayout.EAST);
-        add(drawingPanel, BorderLayout.CENTER);
+        add(glPanel, BorderLayout.CENTER);
         
         setVisible(true);
+        
+        // Initialize OpenGL context after window is visible
+        SwingUtilities.invokeLater(() -> {
+            glPanel.initialize();
+        });
+    }
+    
+    /**
+     * Renders the 3D scene using OpenGL.
+     * Called by GLPanel each frame.
+     */
+    private void render3D() {
+        // Clear the screen with black background
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
+        // TODO: Add 3D rendering code here
+        // For now, this just clears the screen to verify OpenGL is working
     }
     
     @Override
@@ -69,7 +90,9 @@ public class Gravity3DSimulation extends BaseSimulation {
     
     @Override
     public void render() {
-        drawingPanel.repaint();
+        if (glPanel != null && glPanel.isInitialized()) {
+            glPanel.render();
+        }
     }
     
     @Override
@@ -89,22 +112,11 @@ public class Gravity3DSimulation extends BaseSimulation {
         if (animationTimer != null) {
             animationTimer.stop();
         }
-        dispose();
-    }
-    
-    private class DrawingPanel extends JPanel {
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            Graphics2D g2d = (Graphics2D) g;
-            
-            g2d.setColor(Color.BLACK);
-            g2d.fillRect(0, 0, getWidth(), getHeight());
-            
-            // TODO: Implement 3D rendering
-            g2d.setColor(Color.WHITE);
-            g2d.drawString("3D Gravity Simulation - Coming Soon", 10, 20);
+        if (glPanel != null) {
+            glPanel.cleanup();
         }
+        GLPanel.cleanupGLFW();
+        dispose();
     }
 }
 

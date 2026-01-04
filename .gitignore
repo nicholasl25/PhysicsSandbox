@@ -4,6 +4,7 @@ out/
 build/
 target/
 bin/
+libs/
 
 # IDE files
 .idea/
