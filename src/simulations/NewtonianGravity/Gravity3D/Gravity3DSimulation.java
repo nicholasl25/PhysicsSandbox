@@ -8,6 +8,9 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
+
 import static org.lwjgl.opengl.GL11.*;
 
 /**
@@ -33,6 +36,9 @@ public class Gravity3DSimulation extends BaseSimulation {
     /** OpenGL panel for 3D rendering */
     private GLPanel glPanel;
     
+    /** Camera for 3D view */
+    private Camera camera;
+    
     /** Pause state */
     private boolean isPaused = false;
     
@@ -53,7 +59,7 @@ public class Gravity3DSimulation extends BaseSimulation {
         
         // Create and initialize OpenGL panel
         glPanel = new GLPanel();
-        glPanel.setRenderCallback(this::render3D);
+        glPanel.setRenderCallback(this::render);
         
         setLayout(new BorderLayout());
         // add(controlPanel, BorderLayout.EAST);
@@ -64,19 +70,23 @@ public class Gravity3DSimulation extends BaseSimulation {
         // Initialize OpenGL context after window is visible
         SwingUtilities.invokeLater(() -> {
             glPanel.initialize();
+            camera = new Camera();
+            camera.setViewport(glPanel.getGLWidth(), glPanel.getGLHeight());
+            Sphere.initializeMesh(32, 16);
         });
     }
     
-    /**
-     * Renders the 3D scene using OpenGL.
-     * Called by GLPanel each frame.
-     */
-    private void render3D() {
-        // Clear the screen with black background
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        
-        // TODO: Add 3D rendering code here
-        // For now, this just clears the screen to verify OpenGL is working
+    @Override
+    public void render() {
+        if (glPanel != null && glPanel.isInitialized() && camera != null) {
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            Matrix4f viewMatrix = camera.getViewMatrix();
+            Matrix4f projMatrix = camera.getProjectionMatrix();
+            Matrix4f modelMatrix = new Matrix4f().translate(0, 0, -5).scale(1.0f);
+
+            Sphere.render(modelMatrix, viewMatrix, projMatrix, new Vector3f(1.0f, 0.0f, 0.0f));
+        }
     }
     
     @Override
@@ -88,12 +98,6 @@ public class Gravity3DSimulation extends BaseSimulation {
         // TODO: Implement 3D physics update
     }
     
-    @Override
-    public void render() {
-        if (glPanel != null && glPanel.isInitialized()) {
-            glPanel.render();
-        }
-    }
     
     @Override
     public void start() {
@@ -101,7 +105,9 @@ public class Gravity3DSimulation extends BaseSimulation {
         
         animationTimer = new Timer(16, e -> {
             update(DELTA_TIME);
-            render();
+            if (glPanel != null && glPanel.isInitialized()) {
+                glPanel.render();
+            }
         });
         
         animationTimer.start();
@@ -117,6 +123,7 @@ public class Gravity3DSimulation extends BaseSimulation {
         }
         GLPanel.cleanupGLFW();
         dispose();
+        Sphere.cleanupStatic();
     }
 }
 

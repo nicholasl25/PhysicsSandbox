@@ -7,6 +7,7 @@ public class Gravity3DTest {
         
         testGenerateVertices();
         testGenerateIndices();
+        testLoadShader();
         
         System.out.println("\nAll tests completed!");
     }
@@ -77,6 +78,40 @@ public class Gravity3DTest {
         }
         
         System.out.println("PASS: generateIndices()");
+    }
+
+    public static void testLoadShader() {
+        java.io.File vertexFile = new java.io.File("resources/shaders/sphere_vertex.glsl");
+        java.io.File fragmentFile = new java.io.File("resources/shaders/sphere_fragment.glsl");
+        
+        if (!vertexFile.exists()) {
+            System.out.println("FAIL: loadShader() - Vertex shader file not found");
+            return;
+        }
+        
+        if (!fragmentFile.exists()) {
+            System.out.println("FAIL: loadShader() - Fragment shader file not found");
+            return;
+        }
+        
+        try {
+            String vertexSource = new String(java.nio.file.Files.readAllBytes(vertexFile.toPath()));
+            String fragmentSource = new String(java.nio.file.Files.readAllBytes(fragmentFile.toPath()));
+            
+            if (vertexSource.isEmpty() || fragmentSource.isEmpty()) {
+                System.out.println("FAIL: loadShader() - Shader files are empty");
+                return;
+            }
+            
+            if (!vertexSource.contains("#version") || !fragmentSource.contains("#version")) {
+                System.out.println("FAIL: loadShader() - Invalid shader format");
+                return;
+            }
+            
+            System.out.println("PASS: loadShader()");
+        } catch (Exception e) {
+            System.out.println("FAIL: loadShader() - " + e.getMessage());
+        }
     }
 }
 

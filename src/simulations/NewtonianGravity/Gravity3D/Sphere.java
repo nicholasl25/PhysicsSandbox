@@ -1,11 +1,18 @@
 package simulations.NewtonianGravity.Gravity3D;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.nio.file.Files;
 
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
+import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL30.*;
 
 public class Sphere {
     
@@ -15,59 +22,54 @@ public class Sphere {
     private static int ebo;
     private static int indexCount;
     private static boolean meshInitialized = false;
+    private static int shaderProgram;
 
     public Sphere() {
 
     }
 
-    /* 
-    public static void generate_mesh(int segs, int rings) {
-        if(meshInitialized) {
+    public static void initializeMesh(int segments, int rings) {
+        if (meshInitialized) {
             return;
         }
 
-        float[] vertices = generateVertices(segs, rings);
-        int[] indices = generateIndices(segs, rings);
+        Sphere temp = new Sphere();
+        float[] vertices = temp.generateVertices(segments, rings);
+        int[] indices = temp.generateIndices(segments, rings);
         indexCount = indices.length;
 
-
-        // Generate IDs
         vao = glGenVertexArrays();
         vbo = glGenBuffers();
         ebo = glGenBuffers();
 
-        // Bind VAO (records subsequent state)
         glBindVertexArray(vao);
 
-        // Upload vertex data to VBO
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        FloatBuffer vertexBuffer = BufferUtils.createFloatBuffer(vertices);
+        FloatBuffer vertexBuffer = BufferUtils.createFloatBuffer(vertices.length).put(vertices).flip();
         glBufferData(GL_ARRAY_BUFFER, vertexBuffer, GL_STATIC_DRAW);
 
-        // Upload index data to EBO
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-        IntBuffer indexBuffer = BufferUtils.createIntBuffer(indices);
+        IntBuffer indexBuffer = BufferUtils.createIntBuffer(indices.length).put(indices).flip();
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBuffer, GL_STATIC_DRAW);
 
-        // Set vertex attribute pointers (stride = 8 floats, 32 bytes)
-        // Position (location 0): offset 0
         glVertexAttribPointer(0, 3, GL_FLOAT, false, 8 * 4, 0);
         glEnableVertexAttribArray(0);
 
-        // Normal (location 1): offset 12 bytes
         glVertexAttribPointer(1, 3, GL_FLOAT, false, 8 * 4, 3 * 4);
         glEnableVertexAttribArray(1);
 
-        // TexCoord (location 2): offset 24 bytes
         glVertexAttribPointer(2, 2, GL_FLOAT, false, 8 * 4, 6 * 4);
         glEnableVertexAttribArray(2);
 
-        // Unbind
         glBindVertexArray(0);
+
+        shaderProgram = createShaderProgram("resources/shaders/sphere_vertex.glsl", "resources/shaders/sphere_fragment.glsl");
+        if (shaderProgram == -1) {
+            throw new RuntimeException("Failed to create shader program");
+        }
 
         meshInitialized = true;
     }
-    */
 
     public float[] generateVertices(int segments, int rings){
         int vertex_count = (segments + 1) * (rings + 1);
@@ -111,8 +113,8 @@ public class Sphere {
 
         int topLeft, topRight, bottomLeft, bottomRight;
         int idx = 0;
-        for(int i = 0; i <= rings; i++) {
-            for(int j = 0; j <= segments; j++) {
+        for(int i = 0; i < rings; i++) {
+            for(int j = 0; j < segments; j++) {
                 topLeft = i * (segments + 1) + j;
                 topRight = i * (segments + 1) + j + 1;
                 bottomLeft = (i + 1) * (segments + 1) + j;
@@ -126,10 +128,96 @@ public class Sphere {
                 answer[idx * 6 + 3] = topRight;
                 answer[idx * 6 + 4] = bottomRight;
                 answer[idx * 6 + 5] = bottomLeft;
+
+                idx += 1;
             }
         }
 
         return answer;
     }
 
+    public static void render(Matrix4f modelMatrix, Matrix4f viewMatrix, Matrix4f projectionMatrix, Vector3f color) {
+        glUseProgram(shaderProgram);
+
+        int modelLoc = glGetUniformLocation(shaderProgram, "model");
+        int viewLoc = glGetUniformLocation(shaderProgram, "view");
+        int projLoc = glGetUniformLocation(shaderProgram, "projection");
+        int colorLoc = glGetUniformLocation(shaderProgram, "color");
+
+        FloatBuffer modelBuffer = BufferUtils.createFloatBuffer(16);
+        modelMatrix.get(modelBuffer);
+        glUniformMatrix4fv(modelLoc, false, modelBuffer);
+
+        FloatBuffer viewBuffer = BufferUtils.createFloatBuffer(16);
+        viewMatrix.get(viewBuffer);
+        glUniformMatrix4fv(viewLoc, false, viewBuffer);
+
+        FloatBuffer projBuffer = BufferUtils.createFloatBuffer(16);
+        projectionMatrix.get(projBuffer);
+        glUniformMatrix4fv(projLoc, false, projBuffer);
+
+        glUniform3f(colorLoc, color.x, color.y, color.z);
+
+        glBindVertexArray(vao);
+        glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+    }
+
+    public static void cleanupStatic() {
+        if (meshInitialized) {
+            glDeleteVertexArrays(vao);
+            glDeleteBuffers(vbo);
+            glDeleteBuffers(ebo);
+            glDeleteProgram(shaderProgram);
+            meshInitialized = false;
+        }
+    }
+
+    private static int loadShader(String filePath, int shaderType) {
+        try {
+            String source = new String(Files.readAllBytes(new File(filePath).toPath()));
+            int shader = glCreateShader(shaderType);
+            glShaderSource(shader, source);
+            glCompileShader(shader);
+
+            if (glGetShaderi(shader, GL_COMPILE_STATUS) == GL_FALSE) {
+                String log = glGetShaderInfoLog(shader);
+                System.err.println("Shader compilation error: " + log);
+                glDeleteShader(shader);
+                return -1;
+            }
+            return shader;
+        } catch (IOException e) {
+            System.err.println("Failed to load shader: " + filePath);
+            return -1;
+        }
+    }
+
+    private static int createShaderProgram(String vertexPath, String fragmentPath) {
+        int vertexShader = loadShader(vertexPath, GL_VERTEX_SHADER);
+        int fragmentShader = loadShader(fragmentPath, GL_FRAGMENT_SHADER);
+
+        if (vertexShader == -1 || fragmentShader == -1) {
+            return -1;
+        }
+
+        int program = glCreateProgram();
+        glAttachShader(program, vertexShader);
+        glAttachShader(program, fragmentShader);
+        glLinkProgram(program);
+
+        if (glGetProgrami(program, GL_LINK_STATUS) == GL_FALSE) {
+            String log = glGetProgramInfoLog(program);
+            System.err.println("Shader program linking error: " + log);
+            glDeleteProgram(program);
+            glDeleteShader(vertexShader);
+            glDeleteShader(fragmentShader);
+            return -1;
+        }
+
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+
+        return program;
+    }
 }
