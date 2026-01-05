@@ -6,6 +6,7 @@ public class Gravity3DTest {
         System.out.println("Testing Gravity3D classes...\n");
         
         testGenerateVertices();
+        testGenerateIndices();
         
         System.out.println("\nAll tests completed!");
     }
@@ -46,6 +47,36 @@ public class Gravity3DTest {
         }
         
         System.out.println("PASS: generateVertices()");
+    }
+
+    public static void testGenerateIndices() {
+        Sphere sphere = new Sphere();
+        int[] indices = sphere.generateIndices(4, 2);
+        
+        int expectedSize = 6 * 4 * 2;
+        if (indices.length != expectedSize) {
+            System.out.println("FAIL: generateIndices() - Array size mismatch");
+            return;
+        }
+        
+        int vertexCount = (4 + 1) * (2 + 1);
+        for (int i = 0; i < indices.length; i++) {
+            if (indices[i] < 0 || indices[i] >= vertexCount) {
+                System.out.println("FAIL: generateIndices() - Index out of range at " + i);
+                return;
+            }
+        }
+        
+        for (int i = 0; i < indices.length; i += 6) {
+            int v0 = indices[i], v1 = indices[i + 1], v2 = indices[i + 2];
+            int v3 = indices[i + 3], v4 = indices[i + 4], v5 = indices[i + 5];
+            if (v0 == v1 || v1 == v2 || v0 == v2 || v3 == v4 || v4 == v5 || v3 == v5) {
+                System.out.println("FAIL: generateIndices() - Degenerate triangle at " + i);
+                return;
+            }
+        }
+        
+        System.out.println("PASS: generateIndices()");
     }
 }
 

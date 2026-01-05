@@ -105,5 +105,31 @@ public class Sphere {
         return answer;
     }
 
+    public int[] generateIndices(int segments, int rings){
+        int face_count = 6 * (segments) * (rings);
+        int[] answer = new int[face_count];
+
+        int topLeft, topRight, bottomLeft, bottomRight;
+        int idx = 0;
+        for(int i = 0; i <= rings; i++) {
+            for(int j = 0; j <= segments; j++) {
+                topLeft = i * (segments + 1) + j;
+                topRight = i * (segments + 1) + j + 1;
+                bottomLeft = (i + 1) * (segments + 1) + j;
+                bottomRight = (i + 1) * (segments + 1) + j + 1;
+
+                // Divide face into 2 triangles (TL, TR, BL) and (TR, BR, BL)
+                answer[idx * 6] = topLeft;
+                answer[idx * 6 + 1] = topRight;
+                answer[idx * 6 + 2] = bottomLeft;
+
+                answer[idx * 6 + 3] = topRight;
+                answer[idx * 6 + 4] = bottomRight;
+                answer[idx * 6 + 5] = bottomLeft;
+            }
+        }
+
+        return answer;
+    }
 
 }
