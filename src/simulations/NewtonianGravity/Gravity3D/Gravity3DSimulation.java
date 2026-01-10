@@ -11,7 +11,7 @@ import java.util.List;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
-import static org.lwjgl.opengl.GL11.*;
+import com.jogamp.opengl.GL3;
 
 /**
  * 3D Gravity Simulation - Multiple planets interacting through gravitational forces in 3D space
@@ -26,9 +26,6 @@ public class Gravity3DSimulation extends BaseSimulation {
     private boolean useRK4 = false;
     private double coefficientOfRestitution = 1.0;
     private double timeFactor = 1.0;
-    
-    /** Animation timer - calls update() repeatedly */
-    private Timer animationTimer;
     
     /** Time step for physics calculations (in seconds) */
     private static final double DELTA_TIME = 1.0 / 60.0; // 60 FPS
@@ -59,6 +56,20 @@ public class Gravity3DSimulation extends BaseSimulation {
         
         // Create and initialize OpenGL panel
         glPanel = new GLPanel();
+        
+        // Set initialization callback
+        glPanel.setInitCallback(() -> {
+            GL3 gl = glPanel.getGL();
+            if (gl != null) {
+                camera = new Camera();
+                camera.setViewport(glPanel.getGLWidth(), glPanel.getGLHeight());
+                Sphere.initializeMesh(gl, 32, 16);
+                // Start animator after context is initialized
+                glPanel.startAnimator();
+            }
+        });
+        
+        // Set render callback
         glPanel.setRenderCallback(this::render);
         
         setLayout(new BorderLayout());
@@ -67,25 +78,19 @@ public class Gravity3DSimulation extends BaseSimulation {
         
         setVisible(true);
         
-        // Initialize OpenGL context after window is visible
-        SwingUtilities.invokeLater(() -> {
-            glPanel.initialize();
-            camera = new Camera();
-            camera.setViewport(glPanel.getGLWidth(), glPanel.getGLHeight());
-            Sphere.initializeMesh(32, 16);
-        });
+        // Wait for OpenGL context to initialize before starting animator
+        // The init() callback will be called by JOGL when the context is ready
     }
     
     @Override
     public void render() {
-        if (glPanel != null && glPanel.isInitialized() && camera != null) {
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+        GL3 gl = glPanel.getGL();
+        if (gl != null && glPanel.isInitialized() && camera != null) {
             Matrix4f viewMatrix = camera.getViewMatrix();
             Matrix4f projMatrix = camera.getProjectionMatrix();
             Matrix4f modelMatrix = new Matrix4f().translate(0, 0, -5).scale(1.0f);
 
-            Sphere.render(modelMatrix, viewMatrix, projMatrix, new Vector3f(1.0f, 0.0f, 0.0f));
+            Sphere.render(gl, modelMatrix, viewMatrix, projMatrix, new Vector3f(1.0f, 0.0f, 0.0f));
         }
     }
     
@@ -102,28 +107,18 @@ public class Gravity3DSimulation extends BaseSimulation {
     @Override
     public void start() {
         initialize();
-        
-        animationTimer = new Timer(16, e -> {
-            update(DELTA_TIME);
-            if (glPanel != null && glPanel.isInitialized()) {
-                glPanel.render();
-            }
-        });
-        
-        animationTimer.start();
+        // Animator will be started in the init callback after OpenGL context is ready
     }
     
     @Override
     public void stop() {
-        if (animationTimer != null) {
-            animationTimer.stop();
-        }
         if (glPanel != null) {
+            GL3 gl = glPanel.getGL();
+            if (gl != null) {
+                Sphere.cleanupStatic(gl);
+            }
             glPanel.cleanup();
         }
-        GLPanel.cleanupGLFW();
         dispose();
-        Sphere.cleanupStatic();
     }
 }
-

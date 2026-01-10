@@ -18,6 +18,13 @@ function toggleDropdown(id) {
 
 async function launchSimulation(type) {
     try {
+        // For 3D simulation, redirect to web-based version
+        if (type === 'gravity3d') {
+            window.location.href = '/gravity3d.html';
+            return;
+        }
+        
+        // For 2D and Schwarzschild, use the old Java window approach
         const response = await fetch(`/api/launch/${type}`, {
             method: 'POST'
         });

@@ -8,11 +8,11 @@ echo "Compiling Physics Simulations..."
 # Create output directory
 mkdir -p out
 
-# Build classpath with LWJGL and JOML libraries if they exist
+# Build classpath with JOGL and JOML libraries if they exist
 CLASSPATH="out"
-if [ -d "libs/lwjgl" ]; then
-    echo "Including LWJGL libraries..."
-    for jar in libs/lwjgl/*.jar; do
+if [ -d "libs/jogl" ]; then
+    echo "Including JOGL libraries..."
+    for jar in libs/jogl/*.jar; do
         if [ -f "$jar" ]; then
             CLASSPATH="$CLASSPATH:$jar"
         fi
@@ -28,7 +28,7 @@ if [ -d "libs/joml" ]; then
 fi
 
 # Compile Java files (including subdirectories)
-if [ -d "libs/lwjgl" ]; then
+if [ -d "libs/jogl" ]; then
     javac -d out -sourcepath src -cp "$CLASSPATH" $(find src -name "*.java")
 else
     javac -d out -sourcepath src $(find src -name "*.java")
@@ -39,17 +39,20 @@ if [ $? -eq 0 ]; then
     echo "Running application..."
     echo ""
     
-    # Set up native library path for LWJGL
-    if [ -d "libs/lwjgl" ] || [ -d "libs/joml" ]; then
-        # Extract natives if needed (LWJGL natives are in JARs, Java will find them)
-        java -cp "$CLASSPATH" -Djava.library.path="libs/lwjgl" simulations.Main
+    # JOGL natives are in JARs, Java will find them automatically
+    # Add JVM arguments for Java 9+ module system compatibility with JOGL
+    if [ -d "libs/jogl" ] || [ -d "libs/joml" ]; then
+        java --add-opens java.desktop/sun.awt=ALL-UNNAMED \
+             --add-opens java.desktop/java.awt=ALL-UNNAMED \
+             --add-opens java.desktop/sun.java2d=ALL-UNNAMED \
+             -cp "$CLASSPATH" simulations.Main
     else
         java -cp out simulations.Main
     fi
 else
     echo "Compilation failed. Please check for errors above."
     echo ""
-    echo "Note: If you see errors about missing LWJGL classes, run:"
-    echo "  ./setup-lwjgl.sh"
-    echo "to download LWJGL libraries."
+    echo "Note: If you see errors about missing JOGL classes, run:"
+    echo "  ./setup-jogl.sh"
+    echo "to download JOGL libraries."
 fi

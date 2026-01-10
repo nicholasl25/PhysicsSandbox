@@ -2,17 +2,17 @@ package simulations.NewtonianGravity.Gravity3D;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.file.Files;
 
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
-import org.lwjgl.BufferUtils;
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL30.*;
+
+import com.jogamp.opengl.GL3;
+import com.jogamp.common.nio.Buffers;
 
 public class Sphere {
     
@@ -23,47 +23,63 @@ public class Sphere {
     private static int indexCount;
     private static boolean meshInitialized = false;
     private static int shaderProgram;
+    private static GL3 currentGL; // Store current GL context
 
     public Sphere() {
 
     }
 
-    public static void initializeMesh(int segments, int rings) {
+    public static void initializeMesh(GL3 gl, int segments, int rings) {
         if (meshInitialized) {
             return;
         }
+        
+        currentGL = gl;
 
         Sphere temp = new Sphere();
         float[] vertices = temp.generateVertices(segments, rings);
         int[] indices = temp.generateIndices(segments, rings);
         indexCount = indices.length;
 
-        vao = glGenVertexArrays();
-        vbo = glGenBuffers();
-        ebo = glGenBuffers();
+        // Generate IDs
+        int[] vaos = new int[1];
+        int[] vbos = new int[1];
+        int[] ebos = new int[1];
+        gl.glGenVertexArrays(1, vaos, 0);
+        gl.glGenBuffers(1, vbos, 0);
+        gl.glGenBuffers(1, ebos, 0);
+        vao = vaos[0];
+        vbo = vbos[0];
+        ebo = ebos[0];
 
-        glBindVertexArray(vao);
+        gl.glBindVertexArray(vao);
 
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        FloatBuffer vertexBuffer = BufferUtils.createFloatBuffer(vertices.length).put(vertices).flip();
-        glBufferData(GL_ARRAY_BUFFER, vertexBuffer, GL_STATIC_DRAW);
+        // Upload vertex data to VBO
+        gl.glBindBuffer(GL3.GL_ARRAY_BUFFER, vbo);
+        FloatBuffer vertexBuffer = Buffers.newDirectFloatBuffer(vertices);
+        gl.glBufferData(GL3.GL_ARRAY_BUFFER, vertexBuffer.limit() * 4, vertexBuffer, GL3.GL_STATIC_DRAW);
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-        IntBuffer indexBuffer = BufferUtils.createIntBuffer(indices.length).put(indices).flip();
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBuffer, GL_STATIC_DRAW);
+        // Upload index data to EBO
+        gl.glBindBuffer(GL3.GL_ELEMENT_ARRAY_BUFFER, ebo);
+        IntBuffer indexBuffer = Buffers.newDirectIntBuffer(indices);
+        gl.glBufferData(GL3.GL_ELEMENT_ARRAY_BUFFER, indexBuffer.limit() * 4, indexBuffer, GL3.GL_STATIC_DRAW);
 
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, 8 * 4, 0);
-        glEnableVertexAttribArray(0);
+        // Set vertex attribute pointers (stride = 8 floats, 32 bytes)
+        // Position (location 0): offset 0
+        gl.glVertexAttribPointer(0, 3, GL3.GL_FLOAT, false, 8 * 4, 0);
+        gl.glEnableVertexAttribArray(0);
 
-        glVertexAttribPointer(1, 3, GL_FLOAT, false, 8 * 4, 3 * 4);
-        glEnableVertexAttribArray(1);
+        // Normal (location 1): offset 12 bytes
+        gl.glVertexAttribPointer(1, 3, GL3.GL_FLOAT, false, 8 * 4, 3 * 4);
+        gl.glEnableVertexAttribArray(1);
 
-        glVertexAttribPointer(2, 2, GL_FLOAT, false, 8 * 4, 6 * 4);
-        glEnableVertexAttribArray(2);
+        // TexCoord (location 2): offset 24 bytes
+        gl.glVertexAttribPointer(2, 2, GL3.GL_FLOAT, false, 8 * 4, 6 * 4);
+        gl.glEnableVertexAttribArray(2);
 
-        glBindVertexArray(0);
+        gl.glBindVertexArray(0);
 
-        shaderProgram = createShaderProgram("resources/shaders/sphere_vertex.glsl", "resources/shaders/sphere_fragment.glsl");
+        shaderProgram = createShaderProgram(gl, "resources/shaders/sphere_vertex.glsl", "resources/shaders/sphere_fragment.glsl");
         if (shaderProgram == -1) {
             throw new RuntimeException("Failed to create shader program");
         }
@@ -136,54 +152,68 @@ public class Sphere {
         return answer;
     }
 
-    public static void render(Matrix4f modelMatrix, Matrix4f viewMatrix, Matrix4f projectionMatrix, Vector3f color) {
-        glUseProgram(shaderProgram);
+    public static void render(GL3 gl, Matrix4f modelMatrix, Matrix4f viewMatrix, Matrix4f projectionMatrix, Vector3f color) {
+        gl.glUseProgram(shaderProgram);
 
-        int modelLoc = glGetUniformLocation(shaderProgram, "model");
-        int viewLoc = glGetUniformLocation(shaderProgram, "view");
-        int projLoc = glGetUniformLocation(shaderProgram, "projection");
-        int colorLoc = glGetUniformLocation(shaderProgram, "color");
+        int modelLoc = gl.glGetUniformLocation(shaderProgram, "model");
+        int viewLoc = gl.glGetUniformLocation(shaderProgram, "view");
+        int projLoc = gl.glGetUniformLocation(shaderProgram, "projection");
+        int colorLoc = gl.glGetUniformLocation(shaderProgram, "color");
 
-        FloatBuffer modelBuffer = BufferUtils.createFloatBuffer(16);
+        FloatBuffer modelBuffer = Buffers.newDirectFloatBuffer(16);
         modelMatrix.get(modelBuffer);
-        glUniformMatrix4fv(modelLoc, false, modelBuffer);
+        gl.glUniformMatrix4fv(modelLoc, 1, false, modelBuffer);
 
-        FloatBuffer viewBuffer = BufferUtils.createFloatBuffer(16);
+        FloatBuffer viewBuffer = Buffers.newDirectFloatBuffer(16);
         viewMatrix.get(viewBuffer);
-        glUniformMatrix4fv(viewLoc, false, viewBuffer);
+        gl.glUniformMatrix4fv(viewLoc, 1, false, viewBuffer);
 
-        FloatBuffer projBuffer = BufferUtils.createFloatBuffer(16);
+        FloatBuffer projBuffer = Buffers.newDirectFloatBuffer(16);
         projectionMatrix.get(projBuffer);
-        glUniformMatrix4fv(projLoc, false, projBuffer);
+        gl.glUniformMatrix4fv(projLoc, 1, false, projBuffer);
 
-        glUniform3f(colorLoc, color.x, color.y, color.z);
+        gl.glUniform3f(colorLoc, color.x, color.y, color.z);
 
-        glBindVertexArray(vao);
-        glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
+        gl.glBindVertexArray(vao);
+        gl.glDrawElements(GL3.GL_TRIANGLES, indexCount, GL3.GL_UNSIGNED_INT, 0);
+        gl.glBindVertexArray(0);
     }
 
-    public static void cleanupStatic() {
+    public static void cleanupStatic(GL3 gl) {
         if (meshInitialized) {
-            glDeleteVertexArrays(vao);
-            glDeleteBuffers(vbo);
-            glDeleteBuffers(ebo);
-            glDeleteProgram(shaderProgram);
+            int[] vaos = {vao};
+            int[] vbos = {vbo};
+            int[] ebos = {ebo};
+            gl.glDeleteVertexArrays(1, vaos, 0);
+            gl.glDeleteBuffers(1, vbos, 0);
+            gl.glDeleteBuffers(1, ebos, 0);
+            gl.glDeleteProgram(shaderProgram);
             meshInitialized = false;
         }
     }
 
-    private static int loadShader(String filePath, int shaderType) {
+    private static int loadShader(GL3 gl, String filePath, int shaderType) {
         try {
             String source = new String(Files.readAllBytes(new File(filePath).toPath()));
-            int shader = glCreateShader(shaderType);
-            glShaderSource(shader, source);
-            glCompileShader(shader);
+            int shader = gl.glCreateShader(shaderType);
+            
+            String[] sources = {source};
+            int[] lengths = {source.length()};
+            gl.glShaderSource(shader, 1, sources, lengths, 0);
+            gl.glCompileShader(shader);
 
-            if (glGetShaderi(shader, GL_COMPILE_STATUS) == GL_FALSE) {
-                String log = glGetShaderInfoLog(shader);
-                System.err.println("Shader compilation error: " + log);
-                glDeleteShader(shader);
+            int[] compileStatus = new int[1];
+            gl.glGetShaderiv(shader, GL3.GL_COMPILE_STATUS, compileStatus, 0);
+            if (compileStatus[0] == GL3.GL_FALSE) {
+                int[] logLength = new int[1];
+                gl.glGetShaderiv(shader, GL3.GL_INFO_LOG_LENGTH, logLength, 0);
+                if (logLength[0] > 0) {
+                    byte[] logBytes = new byte[logLength[0]];
+                    gl.glGetShaderInfoLog(shader, logLength[0], null, 0, logBytes, 0);
+                    String log = new String(logBytes);
+                    System.err.println("Shader compilation error: " + log);
+                }
+                gl.glDeleteShader(shader);
                 return -1;
             }
             return shader;
@@ -193,30 +223,38 @@ public class Sphere {
         }
     }
 
-    private static int createShaderProgram(String vertexPath, String fragmentPath) {
-        int vertexShader = loadShader(vertexPath, GL_VERTEX_SHADER);
-        int fragmentShader = loadShader(fragmentPath, GL_FRAGMENT_SHADER);
+    private static int createShaderProgram(GL3 gl, String vertexPath, String fragmentPath) {
+        int vertexShader = loadShader(gl, vertexPath, GL3.GL_VERTEX_SHADER);
+        int fragmentShader = loadShader(gl, fragmentPath, GL3.GL_FRAGMENT_SHADER);
 
         if (vertexShader == -1 || fragmentShader == -1) {
             return -1;
         }
 
-        int program = glCreateProgram();
-        glAttachShader(program, vertexShader);
-        glAttachShader(program, fragmentShader);
-        glLinkProgram(program);
+        int program = gl.glCreateProgram();
+        gl.glAttachShader(program, vertexShader);
+        gl.glAttachShader(program, fragmentShader);
+        gl.glLinkProgram(program);
 
-        if (glGetProgrami(program, GL_LINK_STATUS) == GL_FALSE) {
-            String log = glGetProgramInfoLog(program);
-            System.err.println("Shader program linking error: " + log);
-            glDeleteProgram(program);
-            glDeleteShader(vertexShader);
-            glDeleteShader(fragmentShader);
+        int[] linkStatus = new int[1];
+        gl.glGetProgramiv(program, GL3.GL_LINK_STATUS, linkStatus, 0);
+        if (linkStatus[0] == GL3.GL_FALSE) {
+            int[] logLength = new int[1];
+            gl.glGetProgramiv(program, GL3.GL_INFO_LOG_LENGTH, logLength, 0);
+            if (logLength[0] > 0) {
+                byte[] logBytes = new byte[logLength[0]];
+                gl.glGetProgramInfoLog(program, logLength[0], null, 0, logBytes, 0);
+                String log = new String(logBytes);
+                System.err.println("Shader program linking error: " + log);
+            }
+            gl.glDeleteProgram(program);
+            gl.glDeleteShader(vertexShader);
+            gl.glDeleteShader(fragmentShader);
             return -1;
         }
 
-        glDeleteShader(vertexShader);
-        glDeleteShader(fragmentShader);
+        gl.glDeleteShader(vertexShader);
+        gl.glDeleteShader(fragmentShader);
 
         return program;
     }

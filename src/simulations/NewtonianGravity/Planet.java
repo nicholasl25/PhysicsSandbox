@@ -382,6 +382,10 @@ public class Planet {
     public String getName() {
         return this.name;
     }
+    
+    public double getRotationAngle() {
+        return this.rotationAngle;
+    }
 
     public void setVelocity(Vector newVel) {
         this.vel = newVel.clone();

@@ -24,6 +24,9 @@ public class WebServer {
         server.createContext("/api/launch/gravity3d", new LaunchGravity3DHandler());
         server.createContext("/api/launch/schwarzschild", new LaunchSchwarzschildHandler());
         
+        // REST API endpoints for web-based simulations
+        server.createContext("/api/simulations", new SimulationAPIHandler());
+        
         server.setExecutor(null);
         server.start();
         
@@ -178,6 +181,51 @@ public class WebServer {
     
     private static void sendError(HttpExchange exchange, int code, String error) throws IOException {
         sendResponse(exchange, code, error);
+    }
+    
+    // Handler for REST API endpoints - routes based on path pattern
+    private static class SimulationAPIHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String path = exchange.getRequestURI().getPath();
+            String method = exchange.getRequestMethod();
+            
+            // POST /api/simulations - create new simulation
+            if (path.equals("/api/simulations") && method.equals("POST")) {
+                new simulations.api.SimulationAPI.CreateSimulationHandler().handle(exchange);
+                return;
+            }
+            
+            // Extract simulation ID from path: /api/simulations/{id}/...
+            String[] parts = path.split("/");
+            if (parts.length < 4 || !parts[1].equals("api") || !parts[2].equals("simulations")) {
+                sendError(exchange, 404, "Not found");
+                return;
+            }
+            
+            String id = parts[3];
+            String subPath = parts.length > 4 ? parts[4] : "";
+            
+            // GET /api/simulations/{id}/state
+            if (subPath.equals("state") && method.equals("GET")) {
+                new simulations.api.SimulationAPI.GetStateHandler().handle(exchange);
+            }
+            // POST /api/simulations/{id}/planets
+            else if (subPath.equals("planets") && method.equals("POST")) {
+                new simulations.api.SimulationAPI.AddPlanetHandler().handle(exchange);
+            }
+            // DELETE /api/simulations/{id}/planets
+            else if (subPath.equals("planets") && method.equals("DELETE")) {
+                new simulations.api.SimulationAPI.ClearPlanetsHandler().handle(exchange);
+            }
+            // PUT /api/simulations/{id}/settings
+            else if (subPath.equals("settings") && method.equals("PUT")) {
+                new simulations.api.SimulationAPI.UpdateSettingsHandler().handle(exchange);
+            }
+            else {
+                sendError(exchange, 404, "Not found");
+            }
+        }
     }
 }
 
