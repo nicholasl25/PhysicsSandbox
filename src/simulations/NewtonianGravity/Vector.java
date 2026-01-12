@@ -88,7 +88,11 @@ public class Vector {
         }
         return new Vector(result);
     }
-    
+
+
+    public Vector divide(double scalar) {
+        return multiply(1.0 / scalar);
+    }
     /**
      * Computes the dot product with another vector.
      */
