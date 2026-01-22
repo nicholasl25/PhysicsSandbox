@@ -160,6 +160,10 @@ public class Camera {
         return new Vector3f(floatingOrigin);
     }
     
+    public float getFOV() {
+        return fov;
+    }
+    
     public void setFOV(float fovRadians) {
         this.fov = fovRadians;
         this.projectionMatrixDirty = true;

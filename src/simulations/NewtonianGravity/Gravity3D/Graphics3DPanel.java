@@ -2,6 +2,7 @@ package simulations.NewtonianGravity.Gravity3D;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,10 +15,90 @@ public class Graphics3DPanel extends JPanel {
     private Camera camera;
     private List<java.util.function.Consumer<Graphics2D>> renderCallbacks = new ArrayList<>();
     
+    // Mouse drag state for camera rotation
+    private int lastMouseX = -1;
+    private int lastMouseY = -1;
+    private boolean isDragging = false;
+    
+    public boolean isDragging() {
+        return isDragging;
+    }
+    
+    // Rotation sensitivity
+    private static final float ROTATION_SENSITIVITY = 0.005f;
+    
+    // Zoom limits
+    private static final float MIN_FOV = (float) Math.toRadians(10.0);
+    private static final float MAX_FOV = (float) Math.toRadians(120.0);
+    private static final float ZOOM_SENSITIVITY = 0.1f;
+    
     public Graphics3DPanel() {
         setPreferredSize(new Dimension(800, 600));
         setMinimumSize(new Dimension(100, 100));
         setBackground(Color.BLACK);
+        
+        // Add mouse listeners for camera control
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (camera != null && SwingUtilities.isLeftMouseButton(e)) {
+                    lastMouseX = e.getX();
+                    lastMouseY = e.getY();
+                    isDragging = true;
+                }
+            }
+            
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                if (SwingUtilities.isLeftMouseButton(e)) {
+                    isDragging = false;
+                    lastMouseX = -1;
+                    lastMouseY = -1;
+                }
+            }
+        });
+        
+        addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                if (camera != null && isDragging && SwingUtilities.isLeftMouseButton(e)) {
+                    int dx = e.getX() - lastMouseX;
+                    int dy = e.getY() - lastMouseY;
+                    
+                    // Rotate camera based on mouse movement
+                    float deltaYaw = -dx * ROTATION_SENSITIVITY;
+                    float deltaPitch = -dy * ROTATION_SENSITIVITY;
+                    
+                    camera.rotate(deltaYaw, deltaPitch);
+                    
+                    lastMouseX = e.getX();
+                    lastMouseY = e.getY();
+                    
+                    // Trigger repaint to show updated camera view
+                    repaint();
+                }
+            }
+        });
+        
+        addMouseWheelListener(new MouseWheelListener() {
+            @Override
+            public void mouseWheelMoved(MouseWheelEvent e) {
+                if (camera != null) {
+                    int rotation = e.getWheelRotation();
+                    float currentFOV = camera.getFOV();
+                    float newFOV = currentFOV + rotation * ZOOM_SENSITIVITY;
+                    
+                    // Clamp FOV to limits
+                    if (newFOV < MIN_FOV) newFOV = MIN_FOV;
+                    if (newFOV > MAX_FOV) newFOV = MAX_FOV;
+                    
+                    camera.setFOV(newFOV);
+                    
+                    // Trigger repaint to show updated zoom
+                    repaint();
+                }
+            }
+        });
     }
     
     public void setCamera(Camera camera) {

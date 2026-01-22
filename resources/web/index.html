@@ -27,13 +27,19 @@
                 </div>
             </div>
             
-            <div class="sim-card" onclick="launchSimulation('schwarzschild')">
-                <h2>Schwarzschild Black Hole Simulation</h2>
-                <ul>
+            <div class="sim-card dropdown-card">
+                <div class="dropdown-header" onclick="toggleDropdown('blackhole')">
+                    <h2>Black Hole Simulator</h2>
+                    <span class="dropdown-arrow" id="blackhole-arrow">▼</span>
+                </div>
+                <ul class="dropdown-content" id="blackhole-content">
                     <li>Light ray geodesics in Schwarzschild spacetime</li>
                     <li>Tensor algebra engine with Einstein summation</li>
                     <li>Visualization of gravitational lensing effects</li>
                 </ul>
+                <div class="dropdown-options" id="blackhole-options">
+                    <button class="sim-button" onclick="launchSimulation('schwarzschild'); event.stopPropagation();">Schwarzschild Black Hole Simulator</button>
+                </div>
             </div>
         </div>
     </div>

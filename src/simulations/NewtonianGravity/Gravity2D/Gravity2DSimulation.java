@@ -547,7 +547,7 @@ public class Gravity2DSimulation extends BaseSimulation {
 
                 // Compute gravitational force
                 Vector forceVec = planet.gravitationalForceFrom(other, gravitationalConstant);
-                totalForce.add(forceVec);
+                totalForce.addto(forceVec);
             }
 
             // Skip velocity update if planet is set to be removed

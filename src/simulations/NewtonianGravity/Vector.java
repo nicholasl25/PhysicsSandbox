@@ -139,6 +139,16 @@ public class Vector {
         }
         return multiply(1.0 / mag);
     }
+
+    public Vector addto(Vector other) {
+        if (this.data.length != other.data.length) {
+            throw new IllegalArgumentException("Vectors must have same dimensions");
+        }
+        for (int i = 0; i < data.length; i++) {
+            this.data[i] += other.data[i];
+        }
+        return this;
+    }
     
     /**
      * Creates a copy of this vector.
