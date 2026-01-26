@@ -401,6 +401,20 @@ public class Planet {
         return Math.sqrt(dx*dx + dy*dy) <= this.radius;
     }
     
+    /**
+     * Gets the texture image.
+     */
+    public java.awt.image.BufferedImage getTexture() {
+        return texture;
+    }
+    
+    /**
+     * Gets the rotation angle.
+     */
+    public double getRotationAngle() {
+        return rotationAngle;
+    }
+    
     @Override
     public String toString() {
         return String.format("Planet with mass = %.2f pos=%s vel=%s", mass, pos, vel);

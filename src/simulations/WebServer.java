@@ -21,7 +21,6 @@ public class WebServer {
         
         server.createContext("/", new StaticFileHandler());
         server.createContext("/api/launch/gravity2d", new LaunchGravity2DHandler());
-        server.createContext("/api/launch/gravity3d", new LaunchGravity3DHandler());
         server.createContext("/api/launch/schwarzschild", new LaunchSchwarzschildHandler());
         
         // REST API endpoints for web-based simulations
@@ -106,32 +105,6 @@ public class WebServer {
                     try {
                         simulations.NewtonianGravity.Gravity2D.Gravity2DSimulation sim = 
                             new simulations.NewtonianGravity.Gravity2D.Gravity2DSimulation();
-                        sim.start();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                });
-                
-                sendResponse(exchange, 200, "OK");
-            } catch (Exception e) {
-                sendError(exchange, 500, e.getMessage());
-            }
-        }
-    }
-    
-    private static class LaunchGravity3DHandler implements HttpHandler {
-        @Override
-        public void handle(HttpExchange exchange) throws IOException {
-            if (!exchange.getRequestMethod().equals("POST")) {
-                sendError(exchange, 405, "Method not allowed");
-                return;
-            }
-            
-            try {
-                SwingUtilities.invokeLater(() -> {
-                    try {
-                        simulations.NewtonianGravity.Gravity3D.Gravity3DSimulation sim = 
-                            new simulations.NewtonianGravity.Gravity3D.Gravity3DSimulation();
                         sim.start();
                     } catch (Exception e) {
                         e.printStackTrace();

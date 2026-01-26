@@ -88,7 +88,11 @@ public class Vector {
         }
         return new Vector(result);
     }
-    
+
+
+    public Vector divide(double scalar) {
+        return multiply(1.0 / scalar);
+    }
     /**
      * Computes the dot product with another vector.
      */
@@ -134,6 +138,16 @@ public class Vector {
             throw new ArithmeticException("Cannot normalize zero vector");
         }
         return multiply(1.0 / mag);
+    }
+
+    public Vector addto(Vector other) {
+        if (this.data.length != other.data.length) {
+            throw new IllegalArgumentException("Vectors must have same dimensions");
+        }
+        for (int i = 0; i < data.length; i++) {
+            this.data[i] += other.data[i];
+        }
+        return this;
     }
     
     /**

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gravity 3D Simulation</title>
+    <link rel="stylesheet" href="gravity3d.css">
+</head>
+<body>
+    <div id="app-container">
+        <div id="canvas-container"></div>
+        <div id="control-panel">
+            <div id="control-tabs">
+                <button class="tab-button active" data-tab="add">Add</button>
+                <button class="tab-button" data-tab="settings">Settings</button>
+            </div>
+            
+            <div id="add-panel" class="tab-content active">
+                <div class="control-group">
+                    <label>Name (optional):</label>
+                    <input type="text" id="name-field" placeholder="Leave empty for auto-naming">
+                </div>
+                
+                <div class="control-group">
+                    <label>Mass:</label>
+                    <input type="number" id="mass-field" value="50.0" step="0.1">
+                </div>
+                
+                <div class="control-group">
+                    <label>Radius:</label>
+                    <input type="number" id="radius-field" value="10.0" step="0.1">
+                </div>
+                
+                <div class="control-group">
+                    <label>Position:</label>
+                    <div class="vector-input">
+                        <input type="number" id="x-field" value="0.0" step="0.1" placeholder="X">
+                        <input type="number" id="y-field" value="0.0" step="0.1" placeholder="Y">
+                        <input type="number" id="z-field" value="0.0" step="0.1" placeholder="Z">
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Velocity:</label>
+                    <div class="vector-input">
+                        <input type="number" id="vx-field" value="0.0" step="0.1" placeholder="Vx">
+                        <input type="number" id="vy-field" value="0.0" step="0.1" placeholder="Vy">
+                        <input type="number" id="vz-field" value="0.0" step="0.1" placeholder="Vz">
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Texture:</label>
+                    <select id="texture-field">
+                        <option value="">No Texture</option>
+                        <option value="Earth">Earth</option>
+                        <option value="Mars">Mars</option>
+                        <option value="Jupiter">Jupiter</option>
+                        <option value="Moon">Moon</option>
+                        <option value="Sun">Sun</option>
+                        <option value="Venus">Venus</option>
+                    </select>
+                </div>
+                
+                <div class="control-group collapsible">
+                    <div class="collapsible-header" onclick="toggleAdvanced()">
+                        <span>▶ Advanced Settings</span>
+                    </div>
+                    <div class="collapsible-content" id="advanced-content">
+                        <div class="control-group">
+                            <label>Period of Rotation (T):</label>
+                            <input type="number" id="period-field" value="100.0" step="0.1">
+                        </div>
+                        
+                        <div class="control-group">
+                            <label>Temperature (K):</label>
+                            <input type="number" id="temperature-field" value="300.0" step="0.1">
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="add-planet-button" class="primary-button">Add Planet</button>
+            </div>
+            
+            <div id="settings-panel" class="tab-content">
+                <div class="control-group">
+                    <label>Gravitational Constant: <span id="gravity-value">6000</span></label>
+                    <input type="range" id="gravity-slider" min="0" max="10000" value="6000" step="100">
+                </div>
+                
+                <div class="control-group">
+                    <label>Time Factor: <span id="timefactor-value">1.00</span></label>
+                    <input type="range" id="timefactor-slider" min="0" max="200" value="100" step="1">
+                </div>
+                
+                <div class="control-group">
+                    <label>
+                        <input type="checkbox" id="bounce-checkbox">
+                        Bounce
+                    </label>
+                </div>
+                
+                <div class="control-group">
+                    <label>
+                        <input type="checkbox" id="rk4-checkbox">
+                        RK4 Integration
+                    </label>
+                </div>
+            </div>
+            
+            <div id="control-footer">
+                <button id="clear-button" class="danger-button">Clear Simulation</button>
+                <div id="pause-indicator">
+                    <span id="pause-text">Press SPACE to pause</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Three.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- Physics engine -->
+    <script src="physics/Vector.js"></script>
+    <script src="physics/Planet.js"></script>
+    
+    <!-- Simulation -->
+    <script src="gravity3d.js"></script>
+    
+    <!-- UI Controller -->
+    <script src="gravity3d-ui.js"></script>
+</body>
+</html>

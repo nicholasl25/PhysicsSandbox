@@ -21,16 +21,19 @@
 - Temperature visualization and thermal effects on planet appearance.
 - Temperature-based physics interactions.
 
-### Gravity 3D
+### Gravity 3D (Web Application)
 
-#### Coming Soon
+#### Implemented Features
 
 - Full 3D physics simulation with planets moving in three-dimensional space.
-- 3D graphics rendering with perspective projection and camera controls.
-- 3D planet textures and rotation visualization.
-- 3D collision detection and merging.
-- 3D camera controls for viewing the simulation from different angles.
-- All features from the 2D simulation adapted for 3D space.
+- 3D graphics rendering with WebGL/Three.js including perspective projection and camera controls.
+- 3D planet textures with NASA imagery that rotate as planets move.
+- 3D collision detection with merging or bouncing modes.
+- Interactive 3D camera controls: mouse drag to orbit, wheel to zoom, click to select planets.
+- Rest frame camera system that follows selected planet.
+- Real-time physics simulation with adjustable gravitational constant and time factor.
+- Runs entirely in browser - no installation required.
+- All core features from the 2D simulation adapted for 3D space.
 
 ---
 

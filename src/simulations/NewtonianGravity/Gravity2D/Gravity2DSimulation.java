@@ -492,9 +492,6 @@ public class Gravity2DSimulation extends BaseSimulation {
     }
     
     
-    // ============================================
-    // UPDATE METHOD
-    // ============================================
     /**
      * Updates the physics simulation by one time at a time
      * 
@@ -517,8 +514,7 @@ public class Gravity2DSimulation extends BaseSimulation {
             if (planet instanceof PointMass) continue;
             
             // Initialize total force components
-            double totalForceX = 0.0;
-            double totalForceY = 0.0;
+            Vector totalForce = new Vector(new double[]{0.0, 0.0});
 
             for (Planet other : planets) {
                 if (planet == other) continue;
@@ -551,19 +547,16 @@ public class Gravity2DSimulation extends BaseSimulation {
 
                 // Compute gravitational force
                 Vector forceVec = planet.gravitationalForceFrom(other, gravitationalConstant);
-                double[] force = forceVec.getData();
-                totalForceX += force[0];
-                totalForceY += force[1];
+                totalForce.addto(forceVec);
             }
 
             // Skip velocity update if planet is set to be removed
             if (toRemove.contains(planet)) continue;
 
             // Newton's second law: F = ma → a = F/m
-            double accelerationX = totalForceX / planet.getMass();
-            double accelerationY = totalForceY / planet.getMass();
+            Vector acceleration = totalForce.divide(planet.getMass());
 
-            planet.updateVelocity(new Vector(new double[]{accelerationX, accelerationY}), deltaTime * timeFactor);
+            planet.updateVelocity(acceleration, deltaTime * timeFactor);
         }
 
         // Apply removals and additions safely after iteration
