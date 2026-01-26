@@ -11,25 +11,55 @@
         <h1 class="title">PhysicsSandbox</h1>
         
         <div class="simulations">
-            <div class="sim-card dropdown-card">
-                <div class="dropdown-header" onclick="toggleDropdown('newtonian')">
-                    <h2>Newtonian Gravity</h2>
-                    <span class="dropdown-arrow" id="newtonian-arrow">▼</span>
+            <!-- Web Applications Section -->
+            <div class="section-header">
+                <h2 class="section-title">Web Applications</h2>
+                <p class="section-description">Run directly in your browser - no installation required</p>
+            </div>
+            
+            <div class="sim-card dropdown-card web-app">
+                <div class="dropdown-header" onclick="toggleDropdown('newtonian3d')">
+                    <h2>3D Gravity Simulation</h2>
+                    <span class="web-badge">Web</span>
+                    <span class="dropdown-arrow" id="newtonian3d-arrow">▼</span>
                 </div>
-                <ul class="dropdown-content" id="newtonian-content">
+                <ul class="dropdown-content" id="newtonian3d-content">
+                    <li>N-body gravitational interactions in 3D space</li>
+                    <li>Textured rotating planets with NASA imagery</li>
+                    <li>Interactive 3D camera controls and planet selection</li>
+                    <li>Real-time physics simulation with collision detection</li>
+                </ul>
+                <div class="dropdown-options" id="newtonian3d-options">
+                    <button class="sim-button web-button" onclick="launchSimulation('gravity3d'); event.stopPropagation();">Launch 3D Simulation</button>
+                </div>
+            </div>
+            
+            <!-- Desktop Applications Section -->
+            <div class="section-header">
+                <h2 class="section-title">Desktop Applications</h2>
+                <p class="section-description">Java-based simulations (requires Java runtime)</p>
+            </div>
+            
+            <div class="sim-card dropdown-card desktop-app">
+                <div class="dropdown-header" onclick="toggleDropdown('newtonian2d')">
+                    <h2>2D Gravity Simulation</h2>
+                    <span class="desktop-badge">Desktop</span>
+                    <span class="dropdown-arrow" id="newtonian2d-arrow">▼</span>
+                </div>
+                <ul class="dropdown-content" id="newtonian2d-content">
                     <li>N-body gravitational interactions with collision detection</li>
                     <li>Textured rotating planets with NASA imagery</li>
                     <li>Interactive controls for adding objects and adjusting parameters</li>
                 </ul>
-                <div class="dropdown-options" id="newtonian-options">
-                    <button class="sim-button" onclick="launchSimulation('gravity2d'); event.stopPropagation();">2D Simulation</button>
-                    <button class="sim-button" onclick="launchSimulation('gravity3d'); event.stopPropagation();">3D Simulation</button>
+                <div class="dropdown-options" id="newtonian2d-options">
+                    <button class="sim-button desktop-button" onclick="launchSimulation('gravity2d'); event.stopPropagation();">Launch 2D Simulation</button>
                 </div>
             </div>
             
-            <div class="sim-card dropdown-card">
+            <div class="sim-card dropdown-card desktop-app">
                 <div class="dropdown-header" onclick="toggleDropdown('blackhole')">
                     <h2>Black Hole Simulator</h2>
+                    <span class="desktop-badge">Desktop</span>
                     <span class="dropdown-arrow" id="blackhole-arrow">▼</span>
                 </div>
                 <ul class="dropdown-content" id="blackhole-content">
@@ -38,7 +68,7 @@
                     <li>Visualization of gravitational lensing effects</li>
                 </ul>
                 <div class="dropdown-options" id="blackhole-options">
-                    <button class="sim-button" onclick="launchSimulation('schwarzschild'); event.stopPropagation();">Schwarzschild Black Hole Simulator</button>
+                    <button class="sim-button desktop-button" onclick="launchSimulation('schwarzschild'); event.stopPropagation();">Launch Schwarzschild Simulator</button>
                 </div>
             </div>
         </div>

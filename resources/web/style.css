@@ -36,7 +36,27 @@ body {
 .simulations {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 2rem;
+}
+
+.section-header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.section-title {
+    color: white;
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.section-description {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+    font-style: italic;
 }
 
 .sim-card {
@@ -90,6 +110,26 @@ body {
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
+    gap: 0.5rem;
+}
+
+.web-badge, .desktop-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.web-badge {
+    background: #10b981;
+    color: white;
+}
+
+.desktop-badge {
+    background: #667eea;
+    color: white;
 }
 
 .dropdown-header h2 {
@@ -148,3 +188,18 @@ body {
     transform: translateY(0);
 }
 
+.web-button {
+    background: #10b981;
+}
+
+.web-button:hover {
+    background: #059669;
+}
+
+.desktop-button {
+    background: #667eea;
+}
+
+.desktop-button:hover {
+    background: #5568d3;
+}
