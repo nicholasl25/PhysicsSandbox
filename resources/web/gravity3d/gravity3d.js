@@ -143,7 +143,7 @@ class Gravity3DSimulation {
                 const deltaX = e.clientX - this.lastMouseX;
                 const deltaY = e.clientY - this.lastMouseY;
                 
-                this.cameraYaw -= deltaX * 0.01;
+                this.cameraYaw += deltaX * 0.01;
                 this.cameraPitch += deltaY * 0.01;
                 
                 // Clamp pitch
@@ -282,11 +282,8 @@ class Gravity3DSimulation {
         if (selected) {
             // Add highlight effect
             planet.mesh.material.emissive = new THREE.Color(0x333333);
-            // Scale up slightly
-            planet.mesh.scale.set(1.05, 1.05, 1.05);
         } else {
             planet.mesh.material.emissive = new THREE.Color(0x000000);
-            planet.mesh.scale.set(1.0, 1.0, 1.0);
         }
     }
     
@@ -311,8 +308,9 @@ class Gravity3DSimulation {
         const geometry = new THREE.SphereGeometry(planet.getRadius(), 32, 16);
         
         // Default material (will be updated if texture loads)
+        const defaultColor = planet.state.getColor() || new THREE.Color(0.3, 0.5, 1.0);
         let material = new THREE.MeshStandardMaterial({
-            color: new THREE.Color(planet.color.r, planet.color.g, planet.color.b),
+            color: defaultColor,
             emissive: new THREE.Color(0x000000)
         });
         
@@ -321,12 +319,16 @@ class Gravity3DSimulation {
         this.scene.add(mesh);
         
         // Load texture if provided
-        if (planet.texturePath) {
-            this.loadTexture(planet.texturePath, (texture) => {
+        if (planet.state.getTexturepath()) {
+            
+            const tintColor = planet.state.getColor();
+
+            this.loadTexture(planet.state.getTexturepath(), (texture) => {
                 if (texture) {
                     material = new THREE.MeshStandardMaterial({
                         map: texture,
-                        emissive: new THREE.Color(0x000000)
+                        color: tintColor,
+                        emissive: tintColor.clone().multiplyScalar(0.5)
                     });
                     mesh.material = material;
                 }
@@ -344,17 +346,18 @@ class Gravity3DSimulation {
         const pos = new Vector([planetData.x, planetData.y, planetData.z]);
         const vel = new Vector([planetData.vx, planetData.vy, planetData.vz]);
         
-        const planet = new Planet(
-            3, // dimension
+        const state = new State(
             planetData.mass,
             planetData.radius,
+            planetData.temperature,
+        )
+
+        const planet = new Planet(
             pos,
             vel,
             angularVelocity,
-            planetData.temperature,
-            planetData.color,
-            planetData.texturePath,
-            planetData.name || `Planet #${this.planets.length}`
+            planetData.name || `Planet #${this.planets.length}`,
+            state,
         );
         
         this.planets.push(planet);
@@ -393,35 +396,25 @@ class Gravity3DSimulation {
     
     setupPlanets() {
         // Create a sun at the origin
+        const sunState = new State(1000.0, 20.0, 5778.0);
+        const earthState = new State(50, 10, 288);
+
+
         const sun = new Planet(
-            3,
-            1000.0,
-            20.0,
             new Vector([0.0, 0.0, 0.0]),
             new Vector([0.0, 0.0, 0.0]),
-            0.02,
-            5778.0,
-            { r: 1.0, g: 1.0, b: 0.0 },
-            '/textures/Sun.jpg',
-            'Sun'
+            0.02, 'Sun', sunState
         );
         
         // Create a planet orbiting the sun
-        const planet1 = new Planet(
-            3,
-            50.0,
-            10.0,
+        const earth = new Planet(
             new Vector([60.0, 20.0, 0.0]),
             new Vector([0.0, -8.0, 0.0]),
-            0.06,
-            288.0,
-            { r: 0.12, g: 0.39, b: 0.78 },
-            '/textures/Earth.jpg',
-            'Earth'
+            0.06, 'Earth', earthState
         );
         
         this.planets.push(sun);
-        this.planets.push(planet1);
+        this.planets.push(earth);
         
         // Create meshes
         for (const planet of this.planets) {

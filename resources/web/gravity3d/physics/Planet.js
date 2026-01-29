@@ -3,26 +3,15 @@
  * Uses Vector for position and velocity to support 3D simulations.
  */
 class Planet {
-    constructor(dimension, mass, radius, pos, vel, angularVelocity, temperature, color, texturePath, name) {
-        if (dimension !== 2 && dimension !== 3) {
-            throw new Error('Dimension must be 2 or 3');
-        }
-        if (pos.dimensions() !== dimension || vel.dimensions() !== dimension) {
-            throw new Error('Position and velocity vectors must match dimension: ' + dimension);
-        }
-        
-        this.dimension = dimension;
-        this.mass = mass;
-        this.radius = radius;
+    constructor(pos, vel, angularVelocity, name, state) {
+    
         this.pos = pos.clone();
         this.vel = vel.clone();
-        this.color = color || { r: 0.3, g: 0.5, b: 1.0 };
         this.isSelected = false;
-        this.texturePath = texturePath;
         this.angularVelocity = angularVelocity || 0.0;
-        this.temperature = temperature || 300.0;
         this.name = name || 'Planet';
         this.rotationAngle = 0.0;
+        this.state = state
         
         // Three.js objects (will be set by the renderer)
         this.mesh = null;
@@ -39,8 +28,8 @@ class Planet {
         // Update rotation angle
         this.rotationAngle += this.angularVelocity * timeFactor * deltaTime;
         this.rotationAngle = this.rotationAngle % (Math.PI * 2);
-        if (this.rotationAngle < 0) {
-            this.rotationAngle += Math.PI * 2;
+        if (this.rotationAngle > 0) {
+            this.rotationAngle -= Math.PI * 2;
         }
     }
     
@@ -69,9 +58,12 @@ class Planet {
         if (distance === 0.0) {
             return new Vector(new Array(this.pos.dimensions()).fill(0));
         }
+
+        const m1 = this.state.getMass();
+        const m2 = other.state.getMass();
         
         const direction = other.pos.subtract(this.pos).normalize();
-        const forceMagnitude = gravitationalConstant * this.mass * other.mass / (distance * distance);
+        const forceMagnitude = gravitationalConstant * m1 * m2 / (distance * distance);
         
         return direction.multiply(forceMagnitude);
     }
@@ -80,64 +72,64 @@ class Planet {
      * Checks if this planet collides with another planet.
      */
     collidesWith(other) {
-        return this.distanceTo(other) < (this.radius + other.radius);
+        return this.distanceTo(other) < (this.state.getRadius() + other.state.getRadius());
     }
     
     /**
      * Merges this planet with another planet.
      */
     merge(other) {
-        const combinedMass = this.mass + other.mass;
+        const combinedMass = this.state.getMass() + other.state.getMass();
         
         // Weighted average of velocities
-        let newVel = this.vel.multiply(this.mass).add(other.vel.multiply(other.mass));
+        let newVel = this.vel.multiply(this.state.getMass()).add(other.vel.multiply(other.state.getMass()));
         newVel = newVel.multiply(1.0 / combinedMass);
         
         // Weighted average of positions
-        let newPos = this.pos.multiply(this.mass).add(other.pos.multiply(other.mass));
+        let newPos = this.pos.multiply(this.state.getMass()).add(other.pos.multiply(other.state.getMass()));
         newPos = newPos.multiply(1.0 / combinedMass);
         
-        const newTemperature = (this.temperature * this.mass + other.temperature * other.mass) / combinedMass;
-        const newRadius = Math.max(this.radius, other.radius);
+        const newTemperature = (this.state.getTemperature() * this.state.getMass() + other.state.getTemperature() * other.state.getMass()) / combinedMass;
+        const newRadius = Math.max(this.state.getRadius(), other.state.getRadius());
         
         // Average colors
-        const c1 = this.color;
-        const c2 = other.color;
-        const newColor = {
-            r: (c1.r + c2.r) / 2,
-            g: (c1.g + c2.g) / 2,
-            b: (c1.b + c2.b) / 2
-        };
+        const c1 = this.state.getColor() || new THREE.Color(0.3, 0.5, 1.0);
+        const c2 = other.state.getColor() || new THREE.Color(0.3, 0.5, 1.0);
+        const newColor = new THREE.Color(
+            (c1.r + c2.r) / 2,
+            (c1.g + c2.g) / 2,
+            (c1.b + c2.b) / 2
+        );
         
         const momentOfInertiaCoeff = 0.4;
         const angularMomentum = momentOfInertiaCoeff * (
-            this.radius * this.radius * this.mass * this.angularVelocity +
-            other.radius * other.radius * other.mass * other.angularVelocity
+            this.state.getRadius() * this.state.getRadius() * this.state.getMass() * this.angularVelocity +
+            other.state.getRadius() * other.state.getRadius() * other.state.getMass() * other.angularVelocity
         );
         const newAngularVelocity = angularMomentum / (momentOfInertiaCoeff * newRadius * newRadius * combinedMass);
         
         // Use texture and name from larger planet
         let newTexturePath = null;
         let newName = null;
-        if (this.radius > other.radius) {
-            newTexturePath = this.texturePath || other.texturePath;
+        if (this.state.getRadius() > other.state.getRadius()) {
+            newTexturePath = this.state.getTexturepath() || other.state.getTexturepath();
             newName = this.name;
         } else {
-            newTexturePath = other.texturePath || this.texturePath;
+            newTexturePath = other.state.getTexturepath() || this.state.getTexturepath();
             newName = other.name;
         }
         
+        // Create new state for merged planet
+        const newState = new State(combinedMass, newRadius, newTemperature);
+        newState.texturepath = newTexturePath;
+        newState.color = newColor;
+        
         return new Planet(
-            this.dimension,
-            combinedMass,
-            newRadius,
             newPos,
             newVel,
             newAngularVelocity,
-            newTemperature,
-            newColor,
-            newTexturePath,
-            newName
+            newName,
+            newState
         );
     }
     
@@ -158,8 +150,8 @@ class Planet {
         const relVel = u1 - u2;
         if (relVel <= 0) return; // they are separating, no bounce
         
-        const m1 = this.mass;
-        const m2 = other.mass;
+        const m1 = this.state.getMass();
+        const m2 = other.state.getMass();
         const e = coefficientOfRestitution;
         
         const u1p = ((m1 - e * m2) * u1 + (1 + e) * m2 * u2) / (m1 + m2);
@@ -186,14 +178,12 @@ class Planet {
     // Getters
     getVelocity() { return this.vel.clone(); }
     getPosition() { return this.pos.clone(); }
-    getMass() { return this.mass; }
-    getRadius() { return this.radius; }
-    getColor() { return this.color; }
     isClicked() { return this.isSelected; }
     getAngularVelocity() { return this.angularVelocity; }
-    getTemperature() { return this.temperature; }
     getName() { return this.name; }
     getRotationAngle() { return this.rotationAngle; }
+    getMass() { return this.state.getMass(); }
+    getRadius() { return this.state.getRadius(); }
     
     // Setters
     setVelocity(newVel) { this.vel = newVel.clone(); }

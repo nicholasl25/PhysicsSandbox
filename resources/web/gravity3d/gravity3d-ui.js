@@ -153,8 +153,6 @@ function getPlanetData() {
             texturePath = `/textures/${texture}.jpg`;
         }
         
-        // Get color based on texture
-        const color = getColorFromTexture(texture);
         
         return {
             mass,
@@ -167,26 +165,12 @@ function getPlanetData() {
             vz,
             period,
             temperature,
-            color,
             texturePath,
             name
         };
     } catch (e) {
         return null;
     }
-}
-
-function getColorFromTexture(texture) {
-    const colors = {
-        'Earth': { r: 0.12, g: 0.39, b: 0.78 },
-        'Mars': { r: 0.78, g: 0.20, b: 0.12 },
-        'Jupiter': { r: 0.78, g: 0.59, b: 0.39 },
-        'Moon': { r: 0.71, g: 0.71, b: 0.71 },
-        'Sun': { r: 1.0, g: 1.0, b: 0.0 },
-        'Venus': { r: 1.0, g: 0.78, b: 0.39 }
-    };
-    
-    return colors[texture] || { r: 0.3, g: 0.5, b: 1.0 };
 }
 
 function toggleAdvanced() {
