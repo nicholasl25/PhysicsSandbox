@@ -185,8 +185,11 @@ class Gravity3DSimulation {
         // Wheel for zoom
         this.renderer.domElement.addEventListener('wheel', (e) => {
             e.preventDefault();
-            this.cameraDistance += e.deltaY * 0.1;
-            this.cameraDistance = Math.max(50, Math.min(1000, this.cameraDistance));
+            const zoomFactor = Math.pow(1.1, -e.deltaY / 100);
+            this.cameraDistance *= zoomFactor;
+            const minDistance = this.selectedPlanet ? this.selectedPlanet.getRadius() : 0;
+            this.cameraDistance = Math.max(minDistance + 1, this.cameraDistance);
+            console.log('minDistance:', minDistance, 'cameraDistance:', this.cameraDistance, 'zoomFactor:', zoomFactor);
             this.updateCameraPosition();
         });
     }
@@ -270,6 +273,10 @@ class Gravity3DSimulation {
         if (this.selectedPlanet) {
             this.selectedPlanet.clicked();
             this.updatePlanetHighlight(this.selectedPlanet, true);
+            const minDistance = this.selectedPlanet.getRadius();
+            if (this.cameraDistance < minDistance) {
+                this.cameraDistance = minDistance;
+            }
         }
         
         this.updateCameraPosition();
@@ -366,11 +373,17 @@ class Gravity3DSimulation {
         // Position the new planet
         this.updatePlanetPositions();
         
-        // Auto-select if no planet is selected
-        if (!this.selectedPlanet) {
-            this.selectedPlanet = planet;
-            planet.clicked();
-            this.updatePlanetHighlight(planet, true);
+        // Always select the newly added planet
+        if (this.selectedPlanet) {
+            this.selectedPlanet.clicked();
+            this.updatePlanetHighlight(this.selectedPlanet, false);
+        }
+        this.selectedPlanet = planet;
+        planet.clicked();
+        this.updatePlanetHighlight(planet, true);
+        const minDistance = planet.getRadius();
+        if (this.cameraDistance < minDistance) {
+            this.cameraDistance = minDistance;
         }
         
         this.updateCameraPosition();
@@ -428,6 +441,10 @@ class Gravity3DSimulation {
         this.selectedPlanet = sun;
         sun.clicked();
         this.updatePlanetHighlight(sun, true);
+        const minDistance = sun.getRadius();
+        if (this.cameraDistance < minDistance) {
+            this.cameraDistance = minDistance;
+        }
         this.updateCameraPosition();
         
         console.log('Planets created:', this.planets.length);
@@ -490,6 +507,7 @@ class Gravity3DSimulation {
             for (const other of this.planets) {
                 if (planet === other) continue;
                 if (toRemove.includes(other)) continue;
+                if (toRemove.includes(planet)) break;
                 
                 // Check for collisions
                 if (planet.collidesWith(other)) {
@@ -533,9 +551,15 @@ class Gravity3DSimulation {
         for (const merged of toAdd) {
             this.planets.push(merged);
             this.createPlanetMesh(merged);
+            // If selected planet was merged, select the merged planet
+            if (this.selectedPlanet && (toRemove.includes(this.selectedPlanet))) {
+                this.selectedPlanet = merged;
+                merged.clicked();
+                this.updatePlanetHighlight(merged, true);
+            }
         }
         
-        // If selected planet was removed, clear selection
+        // If selected planet was removed (but not merged), clear selection
         if (this.selectedPlanet && !this.planets.includes(this.selectedPlanet)) {
             this.selectedPlanet = null;
         }

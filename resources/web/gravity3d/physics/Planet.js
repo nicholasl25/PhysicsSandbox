@@ -59,8 +59,8 @@ class Planet {
             return new Vector(new Array(this.pos.dimensions()).fill(0));
         }
 
-        m1 = this.state.getMass()
-        m2 = other.state.getMass()
+        const m1 = this.state.getMass();
+        const m2 = other.state.getMass();
         
         const direction = other.pos.subtract(this.pos).normalize();
         const forceMagnitude = gravitationalConstant * m1 * m2 / (distance * distance);
@@ -89,8 +89,17 @@ class Planet {
         let newPos = this.pos.multiply(this.state.getMass()).add(other.pos.multiply(other.state.getMass()));
         newPos = newPos.multiply(1.0 / combinedMass);
         
-        const newTemperature = (this.temperature * this.state.getMass() + other.temperature * other.state.getMass()) / combinedMass;
+        const newTemperature = (this.state.getTemperature() * this.state.getMass() + other.state.getTemperature() * other.state.getMass()) / combinedMass;
         const newRadius = Math.max(this.state.getRadius(), other.state.getRadius());
+        
+        // Average colors
+        const c1 = this.state.getColor() || new THREE.Color(0.3, 0.5, 1.0);
+        const c2 = other.state.getColor() || new THREE.Color(0.3, 0.5, 1.0);
+        const newColor = new THREE.Color(
+            (c1.r + c2.r) / 2,
+            (c1.g + c2.g) / 2,
+            (c1.b + c2.b) / 2
+        );
         
         const momentOfInertiaCoeff = 0.4;
         const angularMomentum = momentOfInertiaCoeff * (
@@ -110,7 +119,10 @@ class Planet {
             newName = other.name;
         }
         
-        newState = newState(combinedMass, newRadius, newTemperature)
+        // Create new state for merged planet
+        const newState = new State(combinedMass, newRadius, newTemperature);
+        newState.texturepath = newTexturePath;
+        newState.color = newColor;
 
         return new Planet(
             newPos,
@@ -170,6 +182,11 @@ class Planet {
     getAngularVelocity() { return this.angularVelocity; }
     getName() { return this.name; }
     getRotationAngle() { return this.rotationAngle; }
+    getRadius() { return this.state.getRadius(); }
+    getMass() { return this.state.getMass(); }
+    getTemperature() { return this.state.getTemperature(); }
+    getColor() { return this.state.getColor(); }
+    getTexturepath() { return this.state.getTexturepath(); }
     
     // Setters
     setVelocity(newVel) { this.vel = newVel.clone(); }
