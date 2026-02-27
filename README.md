@@ -51,8 +51,8 @@ PhysicsSandbox includes:
 
 ### Desktop Applications
 1. Start the web server:
-   ```bash
-   ./run.sh
+```bash
+./run.sh
    ```
 2. Open your browser to `http://localhost:8080`
 3. Click the desired simulation under Desktop Applications

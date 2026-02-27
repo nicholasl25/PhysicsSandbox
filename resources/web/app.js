@@ -26,15 +26,15 @@ async function launchSimulation(type) {
             window.location.href = '/gravity3d/gravity3d.html';
         } else {
             // Launch Java applications for Gravity2D and Schwarzchild
-            const response = await fetch(`/api/launch/${type}`, {
-                method: 'POST'
-            });
-            
-            if (response.ok) {
-                console.log(`Launched ${type} simulation`);
-            } else {
-                const error = await response.text();
-                alert(`Error launching simulation: ${error}`);
+        const response = await fetch(`/api/launch/${type}`, {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            console.log(`Launched ${type} simulation`);
+        } else {
+            const error = await response.text();
+            alert(`Error launching simulation: ${error}`);
             }
         }
     } catch (error) {

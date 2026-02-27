@@ -74,19 +74,15 @@ class Gravity3DSimulation {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x000000);
         
-        // Add lighting
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+        // Add lighting (ambient only for uniform shading)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
         this.scene.add(ambientLight);
-        
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(100, 100, 100);
-        this.scene.add(directionalLight);
         
         // Create camera
         const width = this.container.clientWidth || 800;
         const height = this.container.clientHeight || 600;
         const aspect = width / height;
-        this.camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 10000);
+        this.camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1e20);
         this.camera.position.set(0, 0, this.cameraDistance);
         
         // Create renderer
@@ -266,13 +262,11 @@ class Gravity3DSimulation {
         // Update selection
         if (this.selectedPlanet) {
             this.selectedPlanet.clicked();
-            this.updatePlanetHighlight(this.selectedPlanet, false);
         }
         
         this.selectedPlanet = clickedPlanet;
         if (this.selectedPlanet) {
             this.selectedPlanet.clicked();
-            this.updatePlanetHighlight(this.selectedPlanet, true);
             const minDistance = this.selectedPlanet.getRadius();
             if (this.cameraDistance < minDistance) {
                 this.cameraDistance = minDistance;
@@ -281,18 +275,7 @@ class Gravity3DSimulation {
         
         this.updateCameraPosition();
     }
-    
-    updatePlanetHighlight(planet, selected) {
-        if (!planet.mesh) return;
-        
-        // Add/remove highlight (emissive glow)
-        if (selected) {
-            // Add highlight effect
-            planet.mesh.material.emissive = new THREE.Color(0x333333);
-        } else {
-            planet.mesh.material.emissive = new THREE.Color(0x000000);
-        }
-    }
+
     
     loadTexture(texturePath, callback) {
         if (this.textureCache[texturePath]) {
@@ -311,6 +294,31 @@ class Gravity3DSimulation {
         });
     }
     
+    /**
+     * Converts a loaded texture to grayscale (luminance only).
+     * Use with color: tintColor to get "tintColor version of texture" without multiplication.
+     */
+    createGrayscaleTexture(threeTexture) {
+        const img = threeTexture.image;
+        if (!img || !img.complete) return threeTexture;
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        for (let i = 0; i < data.length; i += 4) {
+            const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+            data[i] = data[i + 1] = data[i + 2] = lum;
+        }
+        ctx.putImageData(imageData, 0, 0);
+        const grayTexture = new THREE.CanvasTexture(canvas);
+        grayTexture.wrapS = threeTexture.wrapS;
+        grayTexture.wrapT = threeTexture.wrapT;
+        return grayTexture;
+    }
+    
     createPlanetMesh(planet) {
         const geometry = new THREE.SphereGeometry(planet.getRadius(), 32, 16);
         
@@ -327,16 +335,24 @@ class Gravity3DSimulation {
         
         // Load texture if provided
         if (planet.state.getTexturepath()) {
-            
             const tintColor = planet.state.getColor();
+            const isStar = planet.state.type === PlanetTypes.STAR;
 
             this.loadTexture(planet.state.getTexturepath(), (texture) => {
                 if (texture) {
-                    material = new THREE.MeshStandardMaterial({
-                        map: texture,
-                        color: tintColor,
-                        emissive: tintColor.clone().multiplyScalar(0.5)
-                    });
+                    if (isStar && tintColor) {
+                        // Stars only: luminance-based tint (grayscale × state color)
+                        const grayscaleMap = this.createGrayscaleTexture(texture);
+                        material = new THREE.MeshStandardMaterial({
+                            map: grayscaleMap,
+                            color: tintColor,
+                        });
+                    } else {
+                        // Planets: use texture as-is, optional emissive
+                        material = new THREE.MeshStandardMaterial({
+                            map: texture,
+                        });
+                    }
                     mesh.material = material;
                 }
             });
@@ -376,11 +392,9 @@ class Gravity3DSimulation {
         // Always select the newly added planet
         if (this.selectedPlanet) {
             this.selectedPlanet.clicked();
-            this.updatePlanetHighlight(this.selectedPlanet, false);
         }
         this.selectedPlanet = planet;
         planet.clicked();
-        this.updatePlanetHighlight(planet, true);
         const minDistance = planet.getRadius();
         if (this.cameraDistance < minDistance) {
             this.cameraDistance = minDistance;
@@ -440,11 +454,7 @@ class Gravity3DSimulation {
         // Select first planet
         this.selectedPlanet = sun;
         sun.clicked();
-        this.updatePlanetHighlight(sun, true);
-        const minDistance = sun.getRadius();
-        if (this.cameraDistance < minDistance) {
-            this.cameraDistance = minDistance;
-        }
+        this.cameraDistance = sun.getRadius() * 4;
         this.updateCameraPosition();
         
         console.log('Planets created:', this.planets.length);
@@ -483,7 +493,7 @@ class Gravity3DSimulation {
         if (!this.selectedPlanet && this.planets.length > 0) {
             this.selectedPlanet = this.planets[0];
             this.selectedPlanet.clicked();
-            this.updatePlanetHighlight(this.selectedPlanet, true);
+            this.cameraDistance = this.selectedPlanet.getRadius() * 4;
         }
         
         // Get origin position for rest frame
@@ -555,7 +565,10 @@ class Gravity3DSimulation {
             if (this.selectedPlanet && (toRemove.includes(this.selectedPlanet))) {
                 this.selectedPlanet = merged;
                 merged.clicked();
-                this.updatePlanetHighlight(merged, true);
+                const minDistance = merged.getRadius();
+                if (this.cameraDistance < minDistance) {
+                    this.cameraDistance = minDistance;
+                }
             }
         }
         
