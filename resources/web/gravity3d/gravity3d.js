@@ -18,8 +18,13 @@ class Gravity3DSimulation {
         this.selectedPlanet = null;
         this.isPaused = false;
         
-        // Simulation parameters
-        this.gravitationalConstant = 6000.0;
+        // Physics constants (shared by Planet and State)
+        this.consts = {
+            G: 6.67430e-11,
+            c: 299792458, 
+            σ: 5.67e-8
+
+        };
         this.bounce = false;
         this.useRK4 = false;
         this.coefficientOfRestitution = 1.0;
@@ -33,7 +38,9 @@ class Gravity3DSimulation {
         this.controls = null;
         this.starsBackground = null;
         
-        // Camera state
+        // Display scale: physics (m) → scene units so huge radii fit in view (1 m = 1e-6 scene)
+        this.displayScale = 1e-6;
+        // Camera state (stored in physics units; scaled when setting position)
         this.cameraDistance = 200.0;
         this.cameraYaw = 0.0;
         this.cameraPitch = 0.0;
@@ -48,6 +55,7 @@ class Gravity3DSimulation {
         // Texture loader
         this.textureLoader = new THREE.TextureLoader();
         this.textureCache = {};
+        this.starHaloTexture = null;
         
         // Animation frame ID
         this.animationFrameId = null;
@@ -74,16 +82,16 @@ class Gravity3DSimulation {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x000000);
         
-        // Add lighting (ambient only for uniform shading)
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
+        // Add lighting: dim ambient + stars emit their own light
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         this.scene.add(ambientLight);
         
         // Create camera
         const width = this.container.clientWidth || 800;
         const height = this.container.clientHeight || 600;
         const aspect = width / height;
-        this.camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1e20);
-        this.camera.position.set(0, 0, this.cameraDistance);
+        this.camera = new THREE.PerspectiveCamera(60, aspect, 0.001, 1e9);
+        this.camera.position.set(0, 0, this.cameraDistance * this.displayScale);
         
         // Create renderer
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -111,14 +119,8 @@ class Gravity3DSimulation {
     
     loadStarsBackground() {
         this.textureLoader.load('/textures/Stars.png', (texture) => {
-            // Create a large sphere with stars texture for background
-            const geometry = new THREE.SphereGeometry(5000, 32, 32);
-            const material = new THREE.MeshBasicMaterial({
-                map: texture,
-                side: THREE.BackSide
-            });
-            this.starsBackground = new THREE.Mesh(geometry, material);
-            this.scene.add(this.starsBackground);
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+            this.scene.background = texture;
         }, undefined, (error) => {
             console.warn('Could not load stars background:', error);
         });
@@ -163,13 +165,6 @@ class Gravity3DSimulation {
             this.isDragging = false;
         });
         
-        // Click to select planet
-        this.renderer.domElement.addEventListener('click', (e) => {
-            if (!this.isDragging) {
-                this.handleClick(e);
-            }
-        });
-        
         // Spacebar to pause/resume
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space' && e.target === document.body) {
@@ -183,9 +178,8 @@ class Gravity3DSimulation {
             e.preventDefault();
             const zoomFactor = Math.pow(1.1, -e.deltaY / 100);
             this.cameraDistance *= zoomFactor;
-            const minDistance = this.selectedPlanet ? this.selectedPlanet.getRadius() : 0;
-            this.cameraDistance = Math.max(minDistance + 1, this.cameraDistance);
-            console.log('minDistance:', minDistance, 'cameraDistance:', this.cameraDistance, 'zoomFactor:', zoomFactor);
+            const minDistance = this.selectedPlanet ? this.getMinCameraDistanceFor(this.selectedPlanet) : 0;
+            this.cameraDistance = Math.max(minDistance, this.cameraDistance);
             this.updateCameraPosition();
         });
     }
@@ -198,9 +192,9 @@ class Gravity3DSimulation {
             const cosYaw = Math.cos(this.cameraYaw);
             const sinYaw = Math.sin(this.cameraYaw);
             
-            const offsetX = this.cameraDistance * cosPitch * sinYaw;
-            const offsetY = this.cameraDistance * sinPitch;
-            const offsetZ = -this.cameraDistance * cosPitch * cosYaw;
+            const offsetX = this.cameraDistance * cosPitch * sinYaw * this.displayScale;
+            const offsetY = this.cameraDistance * sinPitch * this.displayScale;
+            const offsetZ = -this.cameraDistance * cosPitch * cosYaw * this.displayScale;
             
             this.camera.position.set(offsetX, offsetY, offsetZ);
             this.camera.lookAt(0, 0, 0);
@@ -213,69 +207,45 @@ class Gravity3DSimulation {
         const cosYaw = Math.cos(this.cameraYaw);
         const sinYaw = Math.sin(this.cameraYaw);
         
-        const offsetX = this.cameraDistance * cosPitch * sinYaw;
-        const offsetY = this.cameraDistance * sinPitch;
-        const offsetZ = -this.cameraDistance * cosPitch * cosYaw;
+        const offsetX = this.cameraDistance * cosPitch * sinYaw * this.displayScale;
+        const offsetY = this.cameraDistance * sinPitch * this.displayScale;
+        const offsetZ = -this.cameraDistance * cosPitch * cosYaw * this.displayScale;
         
         // Selected planet is always at origin in rest frame
         this.camera.position.set(offsetX, offsetY, offsetZ);
         this.camera.lookAt(0, 0, 0);
     }
     
-    handleClick(event) {
-        const rect = this.renderer.domElement.getBoundingClientRect();
-        const mouse = new THREE.Vector2();
-        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-        
-        const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera(mouse, this.camera);
-        
-        // Get origin position for rest frame
-        let originX = 0, originY = 0, originZ = 0;
-        if (this.selectedPlanet) {
-            const originPos = this.selectedPlanet.getPosition();
-            originX = originPos.get(0);
-            originY = originPos.get(1);
-            originZ = originPos.dimensions() > 2 ? originPos.get(2) : 0;
-        }
-        
-        // Check intersections with all planets
-        // Meshes are already positioned in rest frame, so we can use them directly
-        let clickedPlanet = null;
-        let minDistance = Infinity;
-        
+    updateCameraFrustum() {
+        if (!this.camera || this.planets.length === 0) return;
+        const cam = this.camera.position;
+        let minDist = Infinity;
+        let maxDist = 0;
         for (const planet of this.planets) {
             if (!planet.mesh) continue;
-            
-            const intersects = raycaster.intersectObject(planet.mesh);
-            
-            if (intersects.length > 0) {
-                const distance = intersects[0].distance;
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    clickedPlanet = planet;
-                }
-            }
+            const rScene = Math.max(planet.getRadius() * this.displayScale, 0.01);
+            const dx = planet.mesh.position.x - cam.x;
+            const dy = planet.mesh.position.y - cam.y;
+            const dz = planet.mesh.position.z - cam.z;
+            const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            minDist = Math.min(minDist, Math.max(0, d - rScene));
+            maxDist = Math.max(maxDist, d + rScene);
         }
-        
-        // Update selection
-        if (this.selectedPlanet) {
-            this.selectedPlanet.clicked();
-        }
-        
-        this.selectedPlanet = clickedPlanet;
-        if (this.selectedPlanet) {
-            this.selectedPlanet.clicked();
-            const minDistance = this.selectedPlanet.getRadius();
-            if (this.cameraDistance < minDistance) {
-                this.cameraDistance = minDistance;
-            }
-        }
-        
-        this.updateCameraPosition();
+        if (minDist === Infinity) minDist = 1;
+        let near = Math.max(0.001, minDist * 0.1);
+        let far = Math.max(maxDist * 2, 1000);
+        const maxRatio = 1e6;
+        if (far / near > maxRatio) near = far / maxRatio;
+        this.camera.near = near;
+        this.camera.far = far;
+        this.camera.updateProjectionMatrix();
     }
-
+    
+    /** Minimum camera distance (physics units) so the body is at least 4× its visual radius away (small bodies use min scene radius 0.01). */
+    getMinCameraDistanceFor(planet) {
+        const visualRadiusScene = Math.max(planet.getRadius() * this.displayScale, 0.01);
+        return (4 * visualRadiusScene) / this.displayScale;
+    }
     
     loadTexture(texturePath, callback) {
         if (this.textureCache[texturePath]) {
@@ -318,37 +288,129 @@ class Gravity3DSimulation {
         grayTexture.wrapT = threeTexture.wrapT;
         return grayTexture;
     }
+
+    getStarHaloTexture() {
+        if (this.starHaloTexture) return this.starHaloTexture;
+
+        const size = 512;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+
+        const cx = size / 2;
+        const cy = size / 2;
+        const r = size / 2;
+
+        // Ring-like halo (transparent center, bright border)
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+        grad.addColorStop(0.0, 'rgba(255,255,255,0.80)');
+        grad.addColorStop(0.1, 'rgba(255,255,255,0.70)');
+        grad.addColorStop(0.2, 'rgba(255,255,255,0.55)');
+        grad.addColorStop(0.3, 'rgba(255,255,255,0.40)');
+        grad.addColorStop(0.4, 'rgba(255,255,255,0.25)');
+        grad.addColorStop(0.5, 'rgba(255,255,255,0.10)');
+        grad.addColorStop(0.6, 'rgba(255,255,255,0.05)');
+        grad.addColorStop(0.7, 'rgba(255,255,255,0.02)');
+        grad.addColorStop(0.8, 'rgba(255,255,255,0.01)');
+        grad.addColorStop(0.9, 'rgba(255,255,255,0.00)');
+        grad.addColorStop(1.0, 'rgba(255,255,255,0.00)');
+
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, size, size);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.minFilter = THREE.LinearMipMapLinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        this.starHaloTexture = texture;
+        return texture;
+    }
+
+    disposePlanetMesh(planet) {
+        if (!planet?.mesh) return;
+        this.scene.remove(planet.mesh);
+        planet.mesh.traverse((obj) => {
+            if (obj.geometry) obj.geometry.dispose();
+            if (obj.material) {
+                if (Array.isArray(obj.material)) obj.material.forEach((m) => m.dispose());
+                else obj.material.dispose();
+            }
+        });
+        planet.mesh = null;
+    }
+
+    addStarLightAndHalo(mesh, planet, radiusScene, starColor) {
+        const intensity = planet.getLuminosity(); // Scale by Sun-like luminosity
+        const pointLight = new THREE.PointLight(starColor.getHex(), intensity, 0);
+        pointLight.distance = 0; // Infinite range
+        mesh.add(pointLight);
+        planet.starLight = pointLight;
+
+        const haloMat = new THREE.SpriteMaterial({
+            map: this.getStarHaloTexture(),
+            color: starColor,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+        });
+        haloMat.opacity = 0.9;
+        const halo = new THREE.Sprite(haloMat);
+
+
+        const LuminosityPerArea = planet.getLuminosityPerArea();
+        // Illumination score ranges from 0 to 100 based on luminosity per area
+        const illuminationScore = Math.min(Math.max(2*Math.log2(LuminosityPerArea) + 20, 0), 100);
+
+        const haloDiameter = radiusScene * illuminationScore;
+        halo.scale.set(haloDiameter, haloDiameter, 1);
+        halo.renderOrder = 1;
+        halo.frustumCulled = false;
+        mesh.add(halo);
+        planet.starHalo = halo;
+    }
     
     createPlanetMesh(planet) {
-        const geometry = new THREE.SphereGeometry(planet.getRadius(), 32, 16);
+        const radiusScene = Math.max(planet.getRadius() * this.displayScale, 0.01);
+        const geometry = new THREE.SphereGeometry(radiusScene, 32, 16);
+        
+        const isStar = planet.state.type === PlanetTypes.STAR;
+        const defaultColor = planet.state.getColor() || new THREE.Color(0.3, 0.5, 1.0);
         
         // Default material (will be updated if texture loads)
-        const defaultColor = planet.state.getColor() || new THREE.Color(0.3, 0.5, 1.0);
         let material = new THREE.MeshStandardMaterial({
             color: defaultColor,
-            emissive: new THREE.Color(0x000000)
+            emissive: isStar ? defaultColor.clone() : new THREE.Color(0x000000),
+            emissiveIntensity: isStar ? 0.8 : 0,
         });
         
         const mesh = new THREE.Mesh(geometry, material);
         planet.mesh = mesh;
         this.scene.add(mesh);
         
+        // Stars emit light into the scene and have a colored halo/border
+        if (isStar) {
+            const starColor = planet.state.getColor() || defaultColor;
+            this.addStarLightAndHalo(mesh, planet, radiusScene, starColor);
+        }
+        
         // Load texture if provided
         if (planet.state.getTexturepath()) {
             const tintColor = planet.state.getColor();
-            const isStar = planet.state.type === PlanetTypes.STAR;
+            const isStarType = planet.state.type === PlanetTypes.STAR;
 
             this.loadTexture(planet.state.getTexturepath(), (texture) => {
                 if (texture) {
-                    if (isStar && tintColor) {
-                        // Stars only: luminance-based tint (grayscale × state color)
+                    if (isStarType && tintColor) {
+                        // Stars: emissive so they glow and emit light
                         const grayscaleMap = this.createGrayscaleTexture(texture);
                         material = new THREE.MeshStandardMaterial({
                             map: grayscaleMap,
                             color: tintColor,
+                            emissive: tintColor.clone(),
+                            emissiveIntensity: 0.5,
                         });
                     } else {
-                        // Planets: use texture as-is, optional emissive
+                        // Planets: use texture as-is
                         material = new THREE.MeshStandardMaterial({
                             map: texture,
                         });
@@ -373,7 +435,8 @@ class Gravity3DSimulation {
             planetData.mass,
             planetData.radius,
             planetData.temperature,
-        )
+            this.consts
+        );
 
         const planet = new Planet(
             pos,
@@ -395,22 +458,14 @@ class Gravity3DSimulation {
         }
         this.selectedPlanet = planet;
         planet.clicked();
-        const minDistance = planet.getRadius();
-        if (this.cameraDistance < minDistance) {
-            this.cameraDistance = minDistance;
-        }
-        
+        this.cameraDistance = this.getMinCameraDistanceFor(planet);
         this.updateCameraPosition();
     }
     
     clearSimulation() {
         // Remove all planet meshes
         for (const planet of this.planets) {
-            if (planet.mesh) {
-                this.scene.remove(planet.mesh);
-                planet.mesh.geometry.dispose();
-                planet.mesh.material.dispose();
-            }
+            this.disposePlanetMesh(planet);
         }
         
         if (this.selectedPlanet) {
@@ -421,22 +476,46 @@ class Gravity3DSimulation {
         this.updateCameraPosition();
     }
     
+    selectPlanet(planet) {
+        if (!planet || !this.planets.includes(planet)) return;
+        if (this.selectedPlanet === planet) return;
+        if (this.selectedPlanet) this.selectedPlanet.clicked();
+        this.selectedPlanet = planet;
+        planet.clicked();
+        this.cameraDistance = this.getMinCameraDistanceFor(planet);
+        this.updateCameraPosition();
+    }
+    
+    removePlanet(planet) {
+        if (!planet || !this.planets.includes(planet)) return;
+        const idx = this.planets.indexOf(planet);
+        if (idx === -1) return;
+        if (this.selectedPlanet === planet) {
+            this.selectedPlanet.clicked();
+            this.selectedPlanet = this.planets.length > 1 ? this.planets[idx === 0 ? 1 : 0] : null;
+            if (this.selectedPlanet) {
+                this.selectedPlanet.clicked();
+                this.cameraDistance = this.getMinCameraDistanceFor(this.selectedPlanet);
+            }
+        }
+        this.disposePlanetMesh(planet);
+        this.planets.splice(idx, 1);
+        this.updateCameraPosition();
+    }
+    
     setupPlanets() {
-        // Create a sun at the origin
-        const sunState = new State(1000.0, 20.0, 5778.0);
-        const earthState = new State(50, 10, 288);
-
-
+        // Real-world scale (kg, m). Display scale converts to scene units.
+        const sunState = new State(1.9885e30, 6.957e8, 5778.0, this.consts);
+        const earthState = new State(5.972e24, 6.371e6, 288, this.consts);
         const sun = new Planet(
             new Vector([0.0, 0.0, 0.0]),
             new Vector([0.0, 0.0, 0.0]),
             0.02, 'Sun', sunState
         );
-        
-        // Create a planet orbiting the sun
+        const earthOrbitRadius = 1.496e11;
         const earth = new Planet(
-            new Vector([60.0, 20.0, 0.0]),
-            new Vector([0.0, -8.0, 0.0]),
+            new Vector([earthOrbitRadius, 0, 0.0]),
+            new Vector([-5e9, 0.0, 0.0]),
             0.06, 'Earth', earthState
         );
         
@@ -454,7 +533,7 @@ class Gravity3DSimulation {
         // Select first planet
         this.selectedPlanet = sun;
         sun.clicked();
-        this.cameraDistance = sun.getRadius() * 4;
+        this.cameraDistance = this.getMinCameraDistanceFor(sun);
         this.updateCameraPosition();
         
         console.log('Planets created:', this.planets.length);
@@ -475,9 +554,9 @@ class Gravity3DSimulation {
             if (!planet.mesh) continue;
             
             const pos = planet.getPosition();
-            const x = pos.get(0) - originX;
-            const y = pos.get(1) - originY;
-            const z = (pos.dimensions() > 2 ? pos.get(2) : 0) - originZ;
+            const x = (pos.get(0) - originX) * this.displayScale;
+            const y = (pos.get(1) - originY) * this.displayScale;
+            const z = ((pos.dimensions() > 2 ? pos.get(2) : 0) - originZ) * this.displayScale;
             
             planet.mesh.position.set(x, y, z);
             planet.mesh.rotation.y = planet.getRotationAngle();
@@ -493,7 +572,7 @@ class Gravity3DSimulation {
         if (!this.selectedPlanet && this.planets.length > 0) {
             this.selectedPlanet = this.planets[0];
             this.selectedPlanet.clicked();
-            this.cameraDistance = this.selectedPlanet.getRadius() * 4;
+            this.cameraDistance = this.getMinCameraDistanceFor(this.selectedPlanet);
         }
         
         // Get origin position for rest frame
@@ -525,7 +604,7 @@ class Gravity3DSimulation {
                         planet.bouncePlanet(this.coefficientOfRestitution, other);
                     } else {
                         // Handle merge
-                        const merged = planet.merge(other);
+                        const merged = planet.merge(other, this.consts);
                         toAdd.push(merged);
                         toRemove.push(planet);
                         toRemove.push(other);
@@ -534,7 +613,7 @@ class Gravity3DSimulation {
                 }
                 
                 // Compute gravitational force
-                const forceVec = planet.gravitationalForceFrom(other, this.gravitationalConstant);
+                const forceVec = planet.gravitationalForceFrom(other, this.consts);
                 totalForce = totalForce.add(forceVec);
             }
             
@@ -549,11 +628,7 @@ class Gravity3DSimulation {
         for (const planet of toRemove) {
             const index = this.planets.indexOf(planet);
             if (index > -1) {
-                if (planet.mesh) {
-                    this.scene.remove(planet.mesh);
-                    planet.mesh.geometry.dispose();
-                    planet.mesh.material.dispose();
-                }
+                this.disposePlanetMesh(planet);
                 this.planets.splice(index, 1);
             }
         }
@@ -565,10 +640,7 @@ class Gravity3DSimulation {
             if (this.selectedPlanet && (toRemove.includes(this.selectedPlanet))) {
                 this.selectedPlanet = merged;
                 merged.clicked();
-                const minDistance = merged.getRadius();
-                if (this.cameraDistance < minDistance) {
-                    this.cameraDistance = minDistance;
-                }
+                this.cameraDistance = this.getMinCameraDistanceFor(merged);
             }
         }
         
@@ -593,7 +665,7 @@ class Gravity3DSimulation {
         if (!this.renderer || !this.scene || !this.camera) {
             return;
         }
-        
+        this.updateCameraFrustum();
         this.renderer.render(this.scene, this.camera);
         
         // Draw pause indicator
@@ -618,10 +690,15 @@ class Gravity3DSimulation {
     }
     
     // Public API for control panel
-    setGravitationalConstant(value) {
-        this.gravitationalConstant = value;
+    setG(pct) {
+        this.consts.G = (pct / 100) * 6.67430e-11;
     }
-    
+    setC(pct) {
+        this.consts.c = (pct / 100) * 299792458;
+    }
+    setSigma(pct) {
+        this.consts.σ = (pct / 100) * 5.67e-8;
+    }
     setTimeFactor(value) {
         this.timeFactor = value;
     }

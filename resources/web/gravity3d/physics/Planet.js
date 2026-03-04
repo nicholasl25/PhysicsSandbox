@@ -9,7 +9,7 @@ class Planet {
         this.vel = vel.clone();
         this.isSelected = false;
         this.angularVelocity = angularVelocity || 0.0;
-        this.name = name || 'Planet';
+        this.name = name || state.getType();
         this.rotationAngle = 0.0;
         this.state = state
         
@@ -53,7 +53,7 @@ class Planet {
      * Calculates gravitational force exerted on this planet by another planet.
      * Formula: F = G * m1 * m2 / r²
      */
-    gravitationalForceFrom(other, gravitationalConstant) {
+    gravitationalForceFrom(other, consts) {
         const distance = this.distanceTo(other);
         if (distance === 0.0) {
             return new Vector(new Array(this.pos.dimensions()).fill(0));
@@ -63,7 +63,7 @@ class Planet {
         const m2 = other.state.getMass();
         
         const direction = other.pos.subtract(this.pos).normalize();
-        const forceMagnitude = gravitationalConstant * m1 * m2 / (distance * distance);
+        const forceMagnitude = consts.G * m1 * m2 / (distance * distance);
         
         return direction.multiply(forceMagnitude);
     }
@@ -78,7 +78,7 @@ class Planet {
     /**
      * Merges this planet with another planet.
      */
-    merge(other) {
+    merge(other, consts) {
         const combinedMass = this.state.getMass() + other.state.getMass();
         
         // Weighted average of velocities
@@ -120,7 +120,7 @@ class Planet {
         }
         
         // Create new state for merged planet
-        const newState = new State(combinedMass, newRadius, newTemperature);
+        const newState = new State(combinedMass, newRadius, newTemperature, consts);
         newState.texturepath = newTexturePath;
         newState.color = newColor;
 
@@ -167,6 +167,12 @@ class Planet {
         this.vel = this.vel.add(deltaVel1);
         other.vel = other.vel.add(deltaVel2);
     }
+
+    shouldSplit(consts) {
+        const r = this.state.getRadius();
+        const m = this.state.getMass();
+        return (r ** 3) * (this.angularVelocity ** 2) > consts.G * m;
+    }
     
     /**
      * Toggles selection state.
@@ -185,6 +191,8 @@ class Planet {
     getRadius() { return this.state.getRadius(); }
     getMass() { return this.state.getMass(); }
     getTemperature() { return this.state.getTemperature(); }
+    getLuminosity() { return this.state.getLuminosity(); }
+    getLuminosityPerArea() { return this.state.getLuminosityPerArea(); }
     getColor() { return this.state.getColor(); }
     getTexturepath() { return this.state.getTexturepath(); }
     
