@@ -28,8 +28,8 @@ class Gravity3DSimulation {
         this.bounce = false;
         this.useRK4 = false;
         this.coefficientOfRestitution = 1.0;
-        this.timeFactor = 1.0;
-        this.deltaTime = 1.0 / 60.0; // 60 FPS
+        this.timeFactor = 86400.0; // 86400 seconds in a day
+        this.deltaTime = 1/60.0;  // 60 fps
         
         // Three.js setup
         this.scene = null;
@@ -510,13 +510,13 @@ class Gravity3DSimulation {
         const sun = new Planet(
             new Vector([0.0, 0.0, 0.0]),
             new Vector([0.0, 0.0, 0.0]),
-            0.02, 'Sun', sunState
+            2.963e-6, 'Sun', sunState  // Sun rotation ~24.5 days → rad/s
         );
         const earthOrbitRadius = 1.496e11;
         const earth = new Planet(
-            new Vector([earthOrbitRadius, 0, 0.0]),
-            new Vector([-5e9, 0.0, 0.0]),
-            0.06, 'Earth', earthState
+            new Vector([earthOrbitRadius, 0.0, 0.0]),
+            new Vector([0.0, 29780, 0.0]),
+            7.272e-5, 'Earth', earthState  // Earth rotation 1 day → rad/s
         );
         
         this.planets.push(sun);
@@ -563,6 +563,51 @@ class Gravity3DSimulation {
         }
     }
     
+    /** For one planet: sum gravity from others, handle collision/merge, then F=ma and update velocity. */
+    applyForcesToPlanet(planet, toRemove, toAdd, scaledDt) {
+        let totalForce = new Vector([0.0, 0.0, 0.0]);
+        for (const other of this.planets) {
+            if (planet === other) continue;
+            if (toRemove.includes(other)) continue;
+            if (toRemove.includes(planet)) return;
+            if (planet.collidesWith(other)) {
+                if (this.bounce) {
+                    planet.bouncePlanet(this.coefficientOfRestitution, other);
+                } else {
+                    const merged = planet.merge(other, this.consts);
+                    toAdd.push(merged);
+                    toRemove.push(planet);
+                    toRemove.push(other);
+                }
+                return;
+            }
+            const forceVec = planet.gravitationalForceFrom(other, this.consts);
+            totalForce = totalForce.add(forceVec);
+        }
+        const acceleration = totalForce.divide(planet.getMass());
+        planet.updateVelocity(acceleration, scaledDt);
+    }
+
+    applyRadiationToPlanet(planet, toRemove, toAdd, scaledDt) {
+        for (const other of this.planets) {
+            if (planet === other) continue;
+            if (toRemove.includes(other)) continue;
+            if (toRemove.includes(planet)) return;
+            if (other.state.getType() !== PlanetTypes.STAR) continue;
+            const distance = planet.distanceTo(other);
+            if (distance > other.state.getRadius()) {
+                planet.applyRadiationFrom(other, scaledDt);
+            }
+        }
+    }
+
+    radiateHeatAway(planet, toRemove, scaledDt) {
+        if (toRemove.includes(planet)) return;
+        if (planet.state.getType() === PlanetTypes.STAR) return;
+        planet.applyRadiationAway(scaledDt);
+    }
+
+
     update(deltaTime) {
         if (this.isPaused) {
             return;
@@ -586,42 +631,13 @@ class Gravity3DSimulation {
         
         const toAdd = [];
         const toRemove = [];
-        
-        // Calculate forces and update velocities
+        const scaledDt = deltaTime * this.timeFactor;
+
         for (const planet of this.planets) {
             if (toRemove.includes(planet)) continue;
-            
-            let totalForce = new Vector([0.0, 0.0, 0.0]);
-            
-            for (const other of this.planets) {
-                if (planet === other) continue;
-                if (toRemove.includes(other)) continue;
-                if (toRemove.includes(planet)) break;
-                
-                // Check for collisions
-                if (planet.collidesWith(other)) {
-                    if (this.bounce) {
-                        planet.bouncePlanet(this.coefficientOfRestitution, other);
-                    } else {
-                        // Handle merge
-                        const merged = planet.merge(other, this.consts);
-                        toAdd.push(merged);
-                        toRemove.push(planet);
-                        toRemove.push(other);
-                    }
-                    break;
-                }
-                
-                // Compute gravitational force
-                const forceVec = planet.gravitationalForceFrom(other, this.consts);
-                totalForce = totalForce.add(forceVec);
-            }
-            
-            if (toRemove.includes(planet)) continue;
-            
-            // Newton's second law: F = ma → a = F/m
-            const acceleration = totalForce.divide(planet.getMass());
-            planet.updateVelocity(acceleration, deltaTime * this.timeFactor);
+            this.applyForcesToPlanet(planet, toRemove, toAdd, scaledDt);
+            this.applyRadiationToPlanet(planet, toRemove, toAdd, scaledDt);
+            this.radiateHeatAway(planet, toRemove, scaledDt);
         }
         
         // Apply removals and additions

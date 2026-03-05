@@ -22,24 +22,28 @@ class State {
             this.texturepath = '/textures/Blackhole.jpg';
             this.type = PlanetTypes.BLACKHOLE;
             this.radius = this.getSchwarzschildRadius();
+            this.heatcap = 0;
         }
         
         else if (this.temperature >= 2000) {
             this.texturepath = '/textures/Sun.jpg';
             this.type = PlanetTypes.STAR;
             this.color = this.temperatureToColor();
+            this.heatcap = 1e4;
         }
 
         else if (this.density >= 2000) {
             this.texturepath = '/textures/Moon.jpg';
             this.type = PlanetTypes.ROCKY;
             this.color = new THREE.Color(1, 1, 1);
+            this.heatcap = 8e2 // Approx heatcap for solid rocky object
         }
 
         else {
             this.texturepath = '/textures/Jupiter.jpg';
             this.type = PlanetTypes.GAS;
             this.color = new THREE.Color(1, 1, 1);
+            this.heatcap = 1e4; // Approx heat capacity for H/He mix
         }
 
         this.luminosity = this.getLuminosity();
@@ -78,6 +82,16 @@ class State {
         return new THREE.Color(R/255, G/255, B/255);
     }
 
+    /* Increases or decreases the temperature of the state by change */
+    updateTemp(change) {
+        if (this.temperature + change < 0) {
+            this.temperature = 0;
+        }
+        else {
+            this.temperature += change;
+        }
+    }
+
     /** Returns Schwarzschild radius in m. */
     getSchwarzschildRadius() {
         return 2 * this.consts.G * this.mass / (this.consts.c ** 2);
@@ -110,7 +124,14 @@ class State {
     }
 
 
-
+    /** Returns heat capacity in J/(kg·K). */
+    getHeatCap() {return this.heatcap; }
+    /** Fraction of mass that participates in radiative cooling (surface layer); full mass for heating. ~1e-6 gives Earth ~4 K/day cooling when no sun. */
+    getCoolingMassFraction() {
+        if (this.type === PlanetTypes.STAR || this.type === PlanetTypes.BLACKHOLE) return 1;
+        if (this.type === PlanetTypes.ROCKY || this.type === PlanetTypes.GAS) return 1e-6;
+        return 1;
+    }
 
     /** Returns texture path string. */
     getTexturepath() {return this.texturepath; }

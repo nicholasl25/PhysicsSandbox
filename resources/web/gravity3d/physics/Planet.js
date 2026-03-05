@@ -173,6 +173,41 @@ class Planet {
         const m = this.state.getMass();
         return (r ** 3) * (this.angularVelocity ** 2) > consts.G * m;
     }
+
+    applyRadiationFrom(other, scaledDt) {
+        const solarLuminosity = 3.83e26;
+        const R = this.getRadius();
+        const r = this.distanceTo(other);
+        const L_W = other.getLuminosity() * solarLuminosity;
+
+        // Approx value of albedo for planets
+        const albedo = 0.3;
+        const transferPower = (1 - albedo) * L_W * R * R / (4 * r * r);
+        const energyTransferred = transferPower * scaledDt;
+
+        this.updateInternalEnergy(energyTransferred);
+    }
+
+    applyRadiationAway(scaledDt) {
+        const σ = this.state.consts.σ;
+        const T = this.state.getTemperature();
+        const R = this.state.getRadius();
+        // Approx value of emissivity for IR object
+        const emissivity = 0.9;
+        const powerRadiated = emissivity * σ * 4 * Math.PI * R * R * Math.pow(T, 4);
+        const energyLost = powerRadiated * scaledDt;
+        this.updateInternalEnergy(-energyLost);
+    }
+
+
+    updateInternalEnergy(change) {
+        const C = this.state.getHeatCap();
+        if (C === 0) return;
+        const M = this.getMass();
+        const fraction = this.state.getCoolingMassFraction();
+        const deltaT = change / (C * M * fraction);
+        this.state.updateTemp(deltaT);
+    }
     
     /**
      * Toggles selection state.

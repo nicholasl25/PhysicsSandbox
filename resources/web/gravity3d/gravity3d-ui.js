@@ -135,13 +135,13 @@ function setupControls() {
         sigmaValue.textContent = pct;
         simulation.setSigma(pct);
     });
-    // Time factor slider
+    // Time slider: simulation days per real second (timeFactor = daysPerSec * 86400)
     const timeFactorSlider = document.getElementById('timefactor-slider');
     const timeFactorValue = document.getElementById('timefactor-value');
     timeFactorSlider.addEventListener('input', (e) => {
-        const value = parseInt(e.target.value) / 100.0;
-        timeFactorValue.textContent = value.toFixed(2);
-        simulation.setTimeFactor(value);
+        const daysPerSec = parseInt(e.target.value);
+        timeFactorValue.textContent = daysPerSec;
+        simulation.setTimeFactor(daysPerSec * 86400);
     });
     
     // Bounce checkbox
