@@ -27,7 +27,8 @@
             const forceVec = planet.gravitationalForceFrom(other, this.consts);
             totalForce = totalForce.add(forceVec);
         }
-        const acceleration = totalForce.divide(planet.getMass());
+        const state = planet.getState();
+        const acceleration = totalForce.divide(state.getMass()); // kg
         planet.updateVelocity(acceleration, scaledDt);
     };
 

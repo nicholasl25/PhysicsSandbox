@@ -98,35 +98,75 @@ function setupControls() {
 
     const gravitySlider = document.getElementById('gravity-slider');
     const gravityValue = document.getElementById('gravity-value');
-    gravitySlider.addEventListener('input', (e) => {
-        const pct = parseInt(e.target.value);
-        gravityValue.textContent = pct;
-        simulation.setG(pct);
-    });
+
+    const MIN_MULT = 0.01; // 0.01x
+    const MAX_MULT = 100;  // 100x
+    const LOG_MIN_EXP = Math.log10(MIN_MULT);
+    const LOG_MAX_EXP = Math.log10(MAX_MULT);
+
+    function sliderValueToMultiplier(sliderEl) {
+        const min = parseFloat(sliderEl.min ?? 0);
+        const max = parseFloat(sliderEl.max ?? 1);
+        const v = parseFloat(sliderEl.value);
+        const t = (v - min) / ((max - min) || 1); // 0..1
+        const exp = LOG_MIN_EXP + t * (LOG_MAX_EXP - LOG_MIN_EXP); // -2..2
+        return Math.pow(10, exp); // multiplier
+    }
+
+    function formatMultiplier(mult) {
+        if (!isFinite(mult) || mult <= 0) return '—';
+        return `${mult.toFixed(2)}x`;
+    }
+
+    function formatHundredth(n) {
+        if (!isFinite(n)) return '—';
+        const rounded = Math.round(n * 100) / 100;
+        return rounded.toFixed(2);
+    }
 
     const speedOfLightSlider = document.getElementById('speed-of-light-slider');
     const speedOfLightValue = document.getElementById('speed-of-light-value');
-    speedOfLightSlider.addEventListener('input', (e) => {
-        const pct = parseInt(e.target.value);
-        speedOfLightValue.textContent = pct;
-        simulation.setC(pct);
-    });
+    function applyCFromSlider() {
+        const mult = sliderValueToMultiplier(speedOfLightSlider); // 0.01..100
+        speedOfLightValue.textContent = formatMultiplier(mult);
+        // setC expects "pct" where pct/100 = multiplier.
+        simulation.setC(mult * 100);
+    }
+    speedOfLightSlider.addEventListener('input', applyCFromSlider);
 
     const sigmaSlider = document.getElementById('sigma-slider');
     const sigmaValue = document.getElementById('sigma-value');
-    sigmaSlider.addEventListener('input', (e) => {
-        const pct = parseInt(e.target.value);
-        sigmaValue.textContent = pct;
-        simulation.setSigma(pct);
-    });
+    function applySigmaFromSlider() {
+        const mult = sliderValueToMultiplier(sigmaSlider); // 0.01..100
+        sigmaValue.textContent = formatMultiplier(mult);
+        // setSigma expects "pct" where pct/100 = multiplier.
+        simulation.setSigma(mult * 100);
+    }
+    sigmaSlider.addEventListener('input', applySigmaFromSlider);
+
+    // Initialize displays + simulation constants from the default slider values.
+    applyCFromSlider();
+    applySigmaFromSlider();
+
+    function applyGFromSlider() {
+        const mult = sliderValueToMultiplier(gravitySlider); // 0.01..100
+        gravityValue.textContent = formatMultiplier(mult);
+        // setG expects "pct" where pct/100 = multiplier.
+        simulation.setG(mult * 100);
+    }
+    gravitySlider.addEventListener('input', applyGFromSlider);
+    applyGFromSlider();
 
     const timeFactorSlider = document.getElementById('timefactor-slider');
     const timeFactorValue = document.getElementById('timefactor-value');
-    timeFactorSlider.addEventListener('input', (e) => {
-        const daysPerSec = parseInt(e.target.value);
-        timeFactorValue.textContent = daysPerSec;
-        simulation.setTimeFactor(daysPerSec * 86400);
-    });
+    function applyTimeFromSlider() {
+        // Use the same log mapping as c/sigma sliders; here we interpret the multiplier as days/s.
+        const daysPerSecond = sliderValueToMultiplier(timeFactorSlider); // 0.01..100 (days/s)
+        timeFactorValue.textContent = formatHundredth(daysPerSecond);
+        simulation.setTimeFactor(daysPerSecond * 86400);
+    }
+    timeFactorSlider.addEventListener('input', applyTimeFromSlider);
+    applyTimeFromSlider();
 
     document.getElementById('bounce-checkbox').addEventListener('change', (e) => {
         simulation.setBounce(e.target.checked);
@@ -196,8 +236,9 @@ function refreshInspectPanel() {
 
     if (selected) {
         detailEl.style.display = 'block';
+        const state = selected.getState();
         const img = document.getElementById('inspect-image');
-        const path = selected.getTexturepath();
+        const path = state.getTexturepath();
         const wrap = detailEl.querySelector('.inspect-image-wrap');
         if (path) {
             img.src = path;
@@ -206,19 +247,19 @@ function refreshInspectPanel() {
             wrap.style.background = '#2a2a2a';
         } else {
             img.style.display = 'none';
-            const c = selected.getColor();
+            const c = state.getColor();
             wrap.style.background = c ? `rgb(${Math.round(255*c.r)},${Math.round(255*c.g)},${Math.round(255*c.b)})` : '#2a2a2a';
         }
         const pos = selected.getPosition();
         const vel = selected.getVelocity();
-        const lumSol = selected.getLuminosity();
+        const lumSol = state.getLuminosity(); // L/Lsun
         const fieldsEl = document.getElementById('inspect-fields');
         fieldsEl.innerHTML = [
             ['Name', selected.getName()],
-            ['Type', selected.state.getType()],
-            ['Mass (kg)', formatNum(selected.getMass())],
-            ['Radius (m)', formatNum(selected.getRadius())],
-            ['Temperature (K)', formatNum(selected.getTemperature())],
+            ['Type', state.getType()],
+            ['Mass (kg)', formatNum(state.getMass())],
+            ['Radius (m)', formatNum(state.getRadius())],
+            ['Temperature (K)', formatNum(state.getTemperature())],
             ['Luminosity (L☉)', lumSol === null ? '—' : formatNum(lumSol)],
             ['Angular vel.', formatNum(selected.getAngularVelocity())],
             ['Position (m)', `(${formatNum(pos.get(0))}, ${formatNum(pos.get(1))}, ${pos.dimensions() > 2 ? formatNum(pos.get(2)) : '0'})`],

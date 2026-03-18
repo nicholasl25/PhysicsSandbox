@@ -192,9 +192,9 @@ class Planet {
      */
     applyRadiationFrom(other, scaledDt) {
         const solarLuminosity = 3.83e26;
-        const R = this.getRadius();
+        const R = this.state.getRadius(); // m
         const r = this.distanceTo(other);
-        const L_W = other.getLuminosity() * solarLuminosity;
+        const L_W = other.state.getLuminosity() * solarLuminosity; // W
 
         // Approx value of albedo for planets
         const albedo = 0.3;
@@ -225,7 +225,7 @@ class Planet {
     updateInternalEnergy(change) {
         const C = this.state.getHeatCap();
         if (C === 0) return;
-        const M = this.getMass();
+        const M = this.state.getMass(); // kg
         const fraction = this.state.getCoolingMassFraction();
         const deltaT = change / (C * M * fraction);
         this.state.updateTemp(deltaT);
@@ -247,6 +247,11 @@ class Planet {
      * @returns {Vector} Position (m)
      */
     getPosition() { return this.pos.clone(); }
+
+    /**
+     * @returns {State} Underlying physical state (mass/radius/temperature/etc.)
+     */
+    getState() { return this.state; }
     /**
      * @returns {boolean} Whether this planet is selected
      */
@@ -263,34 +268,7 @@ class Planet {
      * @returns {number} Rotation angle (rad)
      */
     getRotationAngle() { return this.rotationAngle; }
-    /**
-     * @returns {number} Radius (m)
-     */
-    getRadius() { return this.state.getRadius(); }
-    /**
-     * @returns {number} Mass (kg)
-     */
-    getMass() { return this.state.getMass(); }
-    /**
-     * @returns {number} Temperature (K)
-     */
-    getTemperature() { return this.state.getTemperature(); }
-    /**
-     * @returns {number} Luminosity in solar units (L/Lsun)
-     */
-    getLuminosity() { return this.state.getLuminosity(); }
-    /**
-     * @returns {number} Flux ratio relative to Sun (L/4πR^2, in Lsun units)
-     */
-    getLuminosityPerArea() { return this.state.getLuminosityPerArea(); }
-    /**
-     * @returns {THREE.Color|null} Base color used for rendering
-     */
-    getColor() { return this.state.getColor(); }
-    /**
-     * @returns {string|null} Texture path used for rendering
-     */
-    getTexturepath() { return this.state.getTexturepath(); }
+    // (intentionally no direct getRadius/getMass/etc. wrappers; use getState())
     
     // Setters
     /**

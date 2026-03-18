@@ -95,7 +95,8 @@
         let maxDist = 0;
         for (const planet of this.planets) {
             if (!planet.mesh) continue;
-            const rScene = Math.max(planet.getRadius() * this.displayScale, 0.01);
+            const state = planet.getState();
+            const rScene = Math.max(state.getRadius() * this.displayScale, 0.01);
             const dx = planet.mesh.position.x - cam.x;
             const dy = planet.mesh.position.y - cam.y;
             const dz = planet.mesh.position.z - cam.z;
@@ -114,7 +115,8 @@
     };
 
     Gravity3DSimulation.prototype.getMinCameraDistanceFor = function (planet) {
-        const visualRadiusScene = Math.max(planet.getRadius() * this.displayScale, 0.01);
+        const state = planet.getState();
+        const visualRadiusScene = Math.max(state.getRadius() * this.displayScale, 0.01);
         return (4 * visualRadiusScene) / this.displayScale;
     };
 
@@ -200,7 +202,8 @@
     };
 
     Gravity3DSimulation.prototype.addStarLightAndHalo = function (mesh, planet, radiusScene, starColor) {
-        const intensity = planet.getLuminosity();
+        const state = planet.getState();
+        const intensity = state.getLuminosity();
         const pointLight = new THREE.PointLight(starColor.getHex(), intensity, 0);
         pointLight.distance = 0;
         mesh.add(pointLight);
@@ -215,7 +218,7 @@
         });
         haloMat.opacity = 0.9;
         const halo = new THREE.Sprite(haloMat);
-        const LuminosityPerArea = planet.getLuminosityPerArea();
+        const LuminosityPerArea = state.getLuminosityPerArea();
         const illuminationScore = Math.min(Math.max(2 * Math.log2(LuminosityPerArea) + 20, 0), 100);
         const haloDiameter = radiusScene * illuminationScore;
         halo.scale.set(haloDiameter, haloDiameter, 1);
@@ -226,7 +229,8 @@
     };
 
     Gravity3DSimulation.prototype.createPlanetMesh = function (planet) {
-        const radiusScene = Math.max(planet.getRadius() * this.displayScale, 0.01);
+        const state = planet.getState();
+        const radiusScene = Math.max(state.getRadius() * this.displayScale, 0.01);
         const geometry = new THREE.SphereGeometry(radiusScene, 32, 16);
         const isStar = planet.state.type === PlanetTypes.STAR;
         const defaultColor = planet.state.getColor() || new THREE.Color(0.3, 0.5, 1.0);
@@ -304,7 +308,64 @@
             }
             trail.push(planet.mesh.position.clone());
             if (trail.length > this.orbitTrailMaxLength) trail.shift();
+
+            // Keep depth-tested 3D orbit line in sync with the stored trail.
+            this.updateOrbitLineForPlanet(planet, trail);
         }
+    };
+
+    Gravity3DSimulation.prototype.updateOrbitLineForPlanet = function (planet, trail) {
+        if (!this.scene) return;
+
+        let lineObj = this.orbitLines?.get(planet);
+        if (!lineObj) {
+            const geometry = new THREE.BufferGeometry();
+            const material = new THREE.LineBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.45,
+                depthTest: true,
+                depthWrite: false,
+            });
+            const line = new THREE.Line(geometry, material);
+            line.frustumCulled = false;
+            lineObj = { line, geometry, material };
+            this.orbitLines.set(planet, lineObj);
+            this.scene.add(line);
+        }
+
+        if (!trail || trail.length < 2) {
+            lineObj.line.visible = false;
+            return;
+        }
+
+        const positions = new Float32Array(trail.length * 3);
+        for (let i = 0; i < trail.length; i++) {
+            const p = trail[i];
+            positions[i * 3] = p.x;
+            positions[i * 3 + 1] = p.y;
+            positions[i * 3 + 2] = p.z;
+        }
+        lineObj.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        lineObj.line.visible = true;
+    };
+
+    // Orbit line lifecycle helpers (render owns how orbit line objects are created/disposed)
+    Gravity3DSimulation.prototype.disposeOrbitLineForPlanet = function (planet) {
+        if (!this.scene || !this.orbitLines) return;
+        const lineObj = this.orbitLines.get(planet);
+        if (!lineObj) return;
+        if (lineObj.line) this.scene.remove(lineObj.line);
+        if (lineObj.geometry) lineObj.geometry.dispose();
+        if (lineObj.material) lineObj.material.dispose();
+        this.orbitLines.delete(planet);
+    };
+
+    Gravity3DSimulation.prototype.disposeOrbitLines = function () {
+        if (!this.orbitLines) return;
+        // Copy values because disposeOrbitLineForPlanet mutates the map.
+        const planets = Array.from(this.orbitLines.keys());
+        for (const p of planets) this.disposeOrbitLineForPlanet(p);
     };
 
     Gravity3DSimulation.prototype.onWindowResize = function () {
@@ -320,47 +381,24 @@
     };
 
     Gravity3DSimulation.prototype.drawObjectMarkers = function () {
-        if (!this.markerCanvas || !this.markerCtx || !this.camera || this.planets.length === 0) return;
+        if (!this.markerCanvas || !this.markerCtx || !this.camera) return;
         const w = this.markerCanvas.width;
         const h = this.markerCanvas.height;
         this.markerCtx.clearRect(0, 0, w, h);
-
-        for (const planet of this.planets) {
-            const trail = this.orbitTrails.get(planet);
-            if (!trail || trail.length < 2) continue;
-            this.markerCtx.strokeStyle = 'rgba(255,255,255,0.5)';
-            this.markerCtx.lineWidth = 1.5;
-            this.markerCtx.beginPath();
-            let first = true;
-            for (let i = 0; i < trail.length; i++) {
-                this.projectVector.set(trail[i].x, trail[i].y, trail[i].z).project(this.camera);
-                if (this.projectVector.z > 1) {
-                    first = true;
-                    continue;
-                }
-                const px = (this.projectVector.x + 1) * 0.5 * w;
-                const py = (1 - this.projectVector.y) * 0.5 * h;
-                if (first) {
-                    this.markerCtx.moveTo(px, py);
-                    first = false;
-                } else {
-                    this.markerCtx.lineTo(px, py);
-                }
-            }
-            this.markerCtx.stroke();
-        }
+        if (this.planets.length === 0) return;
 
         const minRadius = 4;
         const selectedRadius = 6;
         for (const planet of this.planets) {
             if (!planet.mesh) continue;
+            const state = planet.getState();
             this.projectVector.set(planet.mesh.position.x, planet.mesh.position.y, planet.mesh.position.z);
             this.projectVector.project(this.camera);
             if (this.projectVector.z > 1) continue;
             const px = (this.projectVector.x + 1) * 0.5 * w;
             const py = (1 - this.projectVector.y) * 0.5 * h;
             const markerRadius = planet === this.selectedPlanet ? selectedRadius * 2 : minRadius * 2;
-            const radiusScene = Math.max(planet.getRadius() * this.displayScale, 0.01);
+            const radiusScene = Math.max(state.getRadius() * this.displayScale, 0.01);
             this._viewDir.subVectors(this.camera.position, planet.mesh.position).normalize();
             this._upPerp.copy(this.camera.up).addScaledVector(this._viewDir, -this.camera.up.dot(this._viewDir));
             if (this._upPerp.lengthSq() < 1e-10) {

@@ -59,6 +59,9 @@ class Gravity3DSimulation {
         this.animationFrameId = null;
         this.orbitTrails = new Map();
         this.orbitTrailMaxLength = 600;
+        // Per-planet THREE.Line objects used for orbit visualization (depth-tested so planets occlude them).
+        // Map: Planet -> { line, geometry, material }
+        this.orbitLines = new Map();
 
         this.initialize();
     }
@@ -155,6 +158,8 @@ class Gravity3DSimulation {
         for (const planet of this.planets) {
             this.disposePlanetMesh(planet);
         }
+        // Render owns orbit line objects; dispose them via helper.
+        if (this.disposeOrbitLines) this.disposeOrbitLines();
         if (this.selectedPlanet) {
             this.selectedPlanet.clicked();
         }
@@ -170,6 +175,14 @@ class Gravity3DSimulation {
         if (this.selectedPlanet) this.selectedPlanet.clicked();
         this.selectedPlanet = planet;
         planet.clicked();
+
+        // Reset stored trail history so orbit lines don't include the previous inspection window.
+        for (const p of this.planets) {
+            const trail = this.orbitTrails.get(p);
+            if (trail) trail.length = 0;
+            else this.orbitTrails.set(p, []);
+        }
+
         this.cameraDistance = this.getMinCameraDistanceFor(planet);
         this.cameraOffsetX = this.cameraOffsetY = this.cameraOffsetZ = 0;
         this.updateCameraPosition();
@@ -189,6 +202,8 @@ class Gravity3DSimulation {
         }
         this.disposePlanetMesh(planet);
         this.orbitTrails.delete(planet);
+        // Render owns orbit line objects; dispose them via helper.
+        if (this.disposeOrbitLineForPlanet) this.disposeOrbitLineForPlanet(planet);
         this.planets.splice(idx, 1);
         this.updateCameraPosition();
     }
@@ -249,6 +264,9 @@ class Gravity3DSimulation {
             const index = this.planets.indexOf(planet);
             if (index > -1) {
                 this.disposePlanetMesh(planet);
+                this.orbitTrails.delete(planet);
+                // Render owns orbit lines; dispose via helper.
+                if (this.disposeOrbitLineForPlanet) this.disposeOrbitLineForPlanet(planet);
                 this.planets.splice(index, 1);
             }
         }
