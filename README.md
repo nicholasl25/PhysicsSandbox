@@ -100,11 +100,14 @@ Physics-/
 │   │   ├── style.css                 # Launch page styling
 │   │   └── gravity3d/                # 3D Gravity web application
 │   │       ├── gravity3d.html        # Main HTML file
-│   │       ├── gravity3d.js          # Main simulation engine
-│   │       ├── gravity3d.css        # Application styling
-│   │       ├── gravity3d-ui.js       # UI controller
+│   │       ├── gravity3d-core.js     # Simulation core (state, init, CRUD, loop, API)
+│   │       ├── gravity3d-physics.js  # Gravity, radiation, collisions
+│   │       ├── gravity3d-render.js   # Camera, textures, meshes, markers, controls
+│   │       ├── gravity3d-controls.js # Add/Inspect/Settings UI
+│   │       ├── gravity3d.css         # Application styling
 │   │       └── physics/              # Physics engine (JavaScript)
 │   │           ├── Vector.js
+│   │           ├── State.js
 │   │           └── Planet.js
 │   └── textures/                     # Shared planet textures
 │

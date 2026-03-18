@@ -3,6 +3,13 @@
  * Uses Vector for position and velocity to support 3D simulations.
  */
 class Planet {
+    /**
+     * @param {Vector} pos Position (m)
+     * @param {Vector} vel Velocity (m/s)
+     * @param {number} angularVelocity Angular velocity (rad/s)
+     * @param {string} name Display name
+     * @param {State} state Physical state (mass kg, radius m, temperature K, etc.)
+     */
     constructor(pos, vel, angularVelocity, name, state) {
     
         this.pos = pos.clone();
@@ -19,7 +26,9 @@ class Planet {
     }
     
     /**
-     * Updates the planet's position based on its velocity.
+     * Advance position + rotation by the simulation time step.
+     * @param {number} deltaTime Render dt (s)
+     * @param {number} timeFactor Simulation time multiplier (s of sim per real second)
      */
     updatePosition(deltaTime, timeFactor) {
         const displacement = this.vel.multiply(deltaTime * timeFactor);
@@ -34,7 +43,9 @@ class Planet {
     }
     
     /**
-     * Updates the planet's velocity based on acceleration vector.
+     * Integrate velocity from acceleration.
+     * @param {Vector} accel Acceleration (m/s^2)
+     * @param {number} deltaTime Time step (s)
      */
     updateVelocity(accel, deltaTime) {
         const deltaVel = accel.multiply(deltaTime);
@@ -42,7 +53,8 @@ class Planet {
     }
     
     /**
-     * Calculates the distance to another planet.
+     * @param {Planet} other
+     * @returns {number} Distance (m)
      */
     distanceTo(other) {
         const delta = this.pos.subtract(other.pos);
@@ -50,8 +62,9 @@ class Planet {
     }
     
     /**
-     * Calculates gravitational force exerted on this planet by another planet.
-     * Formula: F = G * m1 * m2 / r²
+     * @param {Planet} other
+     * @param {{G:number}} consts { G } where `G` is gravitational constant
+     * @returns {Vector} Force on this due to `other` (N = kg·m/s^2)
      */
     gravitationalForceFrom(other, consts) {
         const distance = this.distanceTo(other);
@@ -69,14 +82,17 @@ class Planet {
     }
     
     /**
-     * Checks if this planet collides with another planet.
+     * @param {Planet} other
+     * @returns {boolean} True if spheres overlap
      */
     collidesWith(other) {
         return this.distanceTo(other) < (this.state.getRadius() + other.state.getRadius());
     }
     
     /**
-     * Merges this planet with another planet.
+     * @param {Planet} other
+     * @param {{G:number}} consts (currently forwarded to State)
+     * @returns {Planet} New merged planet (pos m, vel m/s)
      */
     merge(other, consts) {
         const combinedMass = this.state.getMass() + other.state.getMass();
@@ -134,7 +150,8 @@ class Planet {
     }
     
     /**
-     * Bounces this planet off another planet.
+     * @param {number} coefficientOfRestitution e (1 = perfectly elastic)
+     * @param {Planet} other
      */
     bouncePlanet(coefficientOfRestitution, other) {
         const deltaPos = other.pos.subtract(this.pos);
@@ -168,12 +185,11 @@ class Planet {
         other.vel = other.vel.add(deltaVel2);
     }
 
-    shouldSplit(consts) {
-        const r = this.state.getRadius();
-        const m = this.state.getMass();
-        return (r ** 3) * (this.angularVelocity ** 2) > consts.G * m;
-    }
 
+    /**
+     * @param {Planet} other Radiating source planet
+     * @param {number} scaledDt Time step (s)
+     */
     applyRadiationFrom(other, scaledDt) {
         const solarLuminosity = 3.83e26;
         const R = this.getRadius();
@@ -188,6 +204,9 @@ class Planet {
         this.updateInternalEnergy(energyTransferred);
     }
 
+    /**
+     * @param {number} scaledDt Time step (s)
+     */
     applyRadiationAway(scaledDt) {
         const σ = this.state.consts.σ;
         const T = this.state.getTemperature();
@@ -200,6 +219,9 @@ class Planet {
     }
 
 
+    /**
+     * @param {number} change Energy change (J)
+     */
     updateInternalEnergy(change) {
         const C = this.state.getHeatCap();
         if (C === 0) return;
@@ -210,28 +232,73 @@ class Planet {
     }
     
     /**
-     * Toggles selection state.
+     * Toggle selection state used by renderer/UI.
      */
     clicked() {
         this.isSelected = !this.isSelected;
     }
     
     // Getters
+    /**
+     * @returns {Vector} Velocity (m/s)
+     */
     getVelocity() { return this.vel.clone(); }
+    /**
+     * @returns {Vector} Position (m)
+     */
     getPosition() { return this.pos.clone(); }
+    /**
+     * @returns {boolean} Whether this planet is selected
+     */
     isClicked() { return this.isSelected; }
+    /**
+     * @returns {number} Angular velocity (rad/s)
+     */
     getAngularVelocity() { return this.angularVelocity; }
+    /**
+     * @returns {string} Planet display name
+     */
     getName() { return this.name; }
+    /**
+     * @returns {number} Rotation angle (rad)
+     */
     getRotationAngle() { return this.rotationAngle; }
+    /**
+     * @returns {number} Radius (m)
+     */
     getRadius() { return this.state.getRadius(); }
+    /**
+     * @returns {number} Mass (kg)
+     */
     getMass() { return this.state.getMass(); }
+    /**
+     * @returns {number} Temperature (K)
+     */
     getTemperature() { return this.state.getTemperature(); }
+    /**
+     * @returns {number} Luminosity in solar units (L/Lsun)
+     */
     getLuminosity() { return this.state.getLuminosity(); }
+    /**
+     * @returns {number} Flux ratio relative to Sun (L/4πR^2, in Lsun units)
+     */
     getLuminosityPerArea() { return this.state.getLuminosityPerArea(); }
+    /**
+     * @returns {THREE.Color|null} Base color used for rendering
+     */
     getColor() { return this.state.getColor(); }
+    /**
+     * @returns {string|null} Texture path used for rendering
+     */
     getTexturepath() { return this.state.getTexturepath(); }
     
     // Setters
+    /**
+     * @param {Vector} newVel Velocity (m/s)
+     */
     setVelocity(newVel) { this.vel = newVel.clone(); }
+    /**
+     * @param {Vector} newPos Position (m)
+     */
     setPosition(newPos) { this.pos = newPos.clone(); }
 }
