@@ -1,6 +1,7 @@
 package simulations.Schwarzchild;
 
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 public class Tensor {
 
@@ -28,6 +29,10 @@ public class Tensor {
         return this.dim;
     }
 
+    public ArrayList<Double> getdata() {
+        return this.data;
+    }
+
     public Tensor mulTensor(Tensor other){
         if (this.dim != other.dim) {
             throw new IllegalArgumentException("Dimensions of Tensors must match to multiply");
@@ -43,7 +48,7 @@ public class Tensor {
         /* Compute simple outer product between tensors */
         ArrayList<Double> outer_prod = new ArrayList<>();
         for (double y : this.data) {
-            ArrayList<Double> result = new ArrayList<>(other.data.stream().map(x -> x * y).toList());
+            ArrayList<Double> result = new ArrayList<>(other.data.stream().map(x -> x * y).collect(java.util.stream.Collectors.toList()));
             outer_prod.addAll(result);
         }
 
@@ -198,6 +203,71 @@ public class Tensor {
         return sb.toString();
     }
 
+    // Checks equality of data only
+    @Override 
+    public boolean equals(Object obj) {
+        if (!(obj instanceof Tensor)) {
+            return false;
+        }
+
+        Tensor T = (Tensor) obj;
+        ArrayList<Double> other_data = T.getdata();
+        ArrayList<Double> this_data = this.data;
+
+        if (this.getDim() != T.getDim()) {
+            return false;
+        }
+
+        if (this_data.size() != other_data.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < other_data.size(); i++) {
+            if (this_data.get(i).doubleValue() != other_data.get(i).doubleValue()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // Checks equality of data ArrayList up to some tolerance
+    public boolean equalswithtolerance(Tensor T, double tolerance) {
+        ArrayList<Double> other_data = T.getdata();
+        ArrayList<Double> this_data = this.data;
+
+        if (this_data.size() != other_data.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < other_data.size(); i++) {
+            if (Math.abs(this_data.get(i) - other_data.get(i)) > tolerance) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // Checks equality of indicies and data
+    public boolean strictequals(Tensor T) {
+        if (!this.equals(T)) {
+            return false;
+        }
+        Index[] idx1 = this.getIndices();
+        Index[] idx2 = T.getIndices();
+        if (idx1.length != idx2.length) {
+            return false;
+        }
+
+        for (int i = 0; i < idx1.length; i++) {
+            if (!idx1[i].equals(idx2[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public void checkConsistent() {
         if (this.data.size() != Math.pow(this.dim, this.indices.length)) {
             throw new IllegalArgumentException("Length of Tensor does not align with dimension and number of indices");
@@ -213,5 +283,9 @@ public class Tensor {
                 }
             }
         }
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }

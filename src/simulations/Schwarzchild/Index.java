@@ -18,4 +18,19 @@ public class Index {
         return this.index;
     }
 
+    @Override 
+    public boolean equals(Object obj) {
+        if (!(obj instanceof Index)) {
+            return false;
+        }
+
+        Index idx = (Index) obj;
+
+        boolean same_letter = (this.index() == idx.index());
+        boolean same_class = (this.covariant() == idx.covariant());
+
+        return (same_letter & same_class);
+
+    }
+
 }

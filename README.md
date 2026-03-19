@@ -157,6 +157,12 @@ Java source files are in `src/simulations/`. Compile with:
 javac -d out -cp "out:libs/joml/*.jar" src/simulations/**/*.java
 ```
 
+### Tests (Maven + JUnit 5)
+Run the existing tests with:
+```bash
+mvn test
+```
+
 ## License
 
 [Add your license here]
