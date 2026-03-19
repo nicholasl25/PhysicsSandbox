@@ -132,6 +132,10 @@ class Gravity3DSimulation {
             this.consts
         );
 
+        if (planetData.texturePath) {
+            state.setTexture(planetData.texturePath);
+        }
+
         const planet = new Planet(
             pos,
             vel,
@@ -154,11 +158,20 @@ class Gravity3DSimulation {
         this.updateCameraPosition();
     }
 
+    /** Returns the camera position in physics world coordinates (meters). */
+    getCameraPhysicsPosition() {
+        if (!this.camera) return { x: 0, y: 0, z: 0 };
+        return {
+            x: this.camera.position.x / this.displayScale,
+            y: this.camera.position.y / this.displayScale,
+            z: this.camera.position.z / this.displayScale
+        };
+    }
+
     clearSimulation() {
         for (const planet of this.planets) {
             this.disposePlanetMesh(planet);
         }
-        // Render owns orbit line objects; dispose them via helper.
         if (this.disposeOrbitLines) this.disposeOrbitLines();
         if (this.selectedPlanet) {
             this.selectedPlanet.clicked();
@@ -176,7 +189,6 @@ class Gravity3DSimulation {
         this.selectedPlanet = planet;
         planet.clicked();
 
-        // Reset stored trail history so orbit lines don't include the previous inspection window.
         for (const p of this.planets) {
             const trail = this.orbitTrails.get(p);
             if (trail) trail.length = 0;
@@ -202,7 +214,6 @@ class Gravity3DSimulation {
         }
         this.disposePlanetMesh(planet);
         this.orbitTrails.delete(planet);
-        // Render owns orbit line objects; dispose them via helper.
         if (this.disposeOrbitLineForPlanet) this.disposeOrbitLineForPlanet(planet);
         this.planets.splice(idx, 1);
         this.updateCameraPosition();
@@ -265,7 +276,6 @@ class Gravity3DSimulation {
             if (index > -1) {
                 this.disposePlanetMesh(planet);
                 this.orbitTrails.delete(planet);
-                // Render owns orbit lines; dispose via helper.
                 if (this.disposeOrbitLineForPlanet) this.disposeOrbitLineForPlanet(planet);
                 this.planets.splice(index, 1);
             }
@@ -300,24 +310,12 @@ class Gravity3DSimulation {
         this.render();
     }
 
-    setG(pct) {
-        this.consts.G = (pct / 100) * 6.67430e-11;
-    }
-    setC(pct) {
-        this.consts.c = (pct / 100) * 299792458;
-    }
-    setSigma(pct) {
-        this.consts.σ = (pct / 100) * 5.67e-8;
-    }
-    setTimeFactor(value) {
-        this.timeFactor = value;
-    }
-    setBounce(enabled) {
-        this.bounce = enabled;
-    }
-    setRK4(enabled) {
-        this.useRK4 = enabled;
-    }
+    setG(pct) { this.consts.G = (pct / 100) * 6.67430e-11; }
+    setC(pct) { this.consts.c = (pct / 100) * 299792458; }
+    setSigma(pct) { this.consts.σ = (pct / 100) * 5.67e-8; }
+    setTimeFactor(value) { this.timeFactor = value; }
+    setBounce(enabled) { this.bounce = enabled; }
+    setRK4(enabled) { this.useRK4 = enabled; }
 
     dispose() {
         if (this.animationFrameId) {

@@ -1,0 +1,122 @@
+[
+  {
+    "name": "Sun",
+    "mass": 1.9885e30,
+    "radii": 6.957e8,
+    "temp": 5778,
+    "texture": "/textures/Sun.jpg"
+  },
+  {
+    "name": "Mercury",
+    "mass": 3.3011e23,
+    "radii": 2.4397e6,
+    "temp": 440,
+    "texture": "/textures/Mercury.jpg"
+  },
+  {
+    "name": "Venus",
+    "mass": 4.8675e24,
+    "radii": 6.0518e6,
+    "temp": 737,
+    "texture": "/textures/Venus.jpg"
+  },
+  {
+    "name": "Earth",
+    "mass": 5.97219e24,
+    "radii": 6.371e6,
+    "temp": 288,
+    "texture": "/textures/Earth.jpg"
+  },
+  {
+    "name": "Moon",
+    "mass": 7.342e22,
+    "radii": 1.7374e6,
+    "temp": 220,
+    "texture": ""
+  },
+  {
+    "name": "Mars",
+    "mass": 6.4171e23,
+    "radii": 3.3895e6,
+    "temp": 210,
+    "texture": "/textures/Mars.jpg"
+  },
+  {
+    "name": "Jupiter",
+    "mass": 1.89813e27,
+    "radii": 6.9911e7,
+    "temp": 165,
+    "texture": "/textures/Jupiter.jpg"
+  },
+  {
+    "name": "Saturn",
+    "mass": 5.6834e26,
+    "radii": 5.8232e7,
+    "temp": 134,
+    "texture": "/textures/Saturn.jpg"
+  },
+  {
+    "name": "Uranus",
+    "mass": 8.681e25,
+    "radii": 2.5362e7,
+    "temp": 76,
+    "texture": "/textures/Uranus.jpg"
+  },
+  {
+    "name": "Neptune",
+    "mass": 1.02413e26,
+    "radii": 2.4622e7,
+    "temp": 72,
+    "texture": "/textures/Neptune.jpg"
+  },
+  {
+    "name": "Pluto",
+    "mass": 1.303e22,
+    "radii": 1.1883e6,
+    "temp": 44,
+    "texture": ""
+  },
+  {
+    "name": "Alpha Centauri A",
+    "mass": 2.18735e30,
+    "radii": 8.41797e8,
+    "temp": 5847,
+    "texture": ""
+  },
+  {
+    "name": "Proxima Centauri",
+    "mass": 2.3862e29,
+    "radii": 1.01572e8,
+    "temp": 2980,
+    "texture": ""
+  },
+  {
+    "name": "Proxima Centauri b",
+    "mass": 9.734686e24,
+    "radii": 6.81697e6,
+    "temp": 234,
+    "texture": ""
+  },
+  {
+    "name": "51 Pegasi b",
+    "mass": 8.921211e26,
+    "radii": 1.358348e8,
+    "temp": 1260,
+    "texture": ""
+  },
+  {
+    "name": "Sagittarius A*",
+    "mass": 8.5445845e36,
+    "radii": 1,
+    "temp": 0,
+    "texture": ""
+  },
+  {
+    "name": "M87*",
+    "mass": 1.292525e40,
+    "radii": 1,
+    "temp": 0,
+    "texture": ""
+  }
+]
+

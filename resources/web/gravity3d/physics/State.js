@@ -29,11 +29,11 @@ class State {
             this.texturepath = '/textures/Sun.jpg';
             this.type = PlanetTypes.STAR;
             this.color = this.temperatureToColor();
-            this.heatcap = 1e4;
+            this.heatcap = 1e4; // Approx heat capacity for H/He mix
         }
 
         else if (this.density >= 2000) {
-            this.texturepath = '/textures/Moon.jpg';
+            this.texturepath = '/textures/Mercury.jpg';
             this.type = PlanetTypes.ROCKY;
             this.color = new THREE.Color(1, 1, 1);
             this.heatcap = 8e2 // Approx heatcap for solid rocky object
@@ -133,6 +133,8 @@ class State {
         return 1;
     }
 
+    /** Overrides the auto-assigned texture path. */
+    setTexturepath(path) { this.texturepath = path; }
     /** Returns texture path string. */
     getTexturepath() {return this.texturepath; }
     /** Returns THREE.Color. */
