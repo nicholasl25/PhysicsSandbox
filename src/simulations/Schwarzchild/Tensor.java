@@ -1,7 +1,6 @@
 package simulations.Schwarzchild;
 
 import java.util.ArrayList;
-import java.util.stream.Collectors;
 
 public class Tensor {
 
@@ -45,11 +44,21 @@ public class Tensor {
         System.arraycopy(this.indices, 0, new_indices, 0, this.indices.length);
         System.arraycopy(other.indices, 0, new_indices,  this.indices.length, other.indices.length);
 
-        /* Compute simple outer product between tensors */
-        ArrayList<Double> outer_prod = new ArrayList<>();
-        for (double y : this.data) {
-            ArrayList<Double> result = new ArrayList<>(other.data.stream().map(x -> x * y).collect(java.util.stream.Collectors.toList()));
-            outer_prod.addAll(result);
+        /* Outer product: combined storage uses the same "big-endian" layout as contract():
+         * flat = leftDigit0·dim^(na+nb-1) + … + rightDigit(nb-1)·dim^0,
+         * i.e. left tensor's index list is the slower (more significant) block, then the right
+         * tensor's components vary fastest. That is flatCombined = flatLeft·dim^nb + flatRight. */
+        int numLeftSlots = this.indices.length;
+        int numRightSlots = other.indices.length;
+        int strideRightBlock = (int) Math.pow(this.dim, numRightSlots);
+        int outerLinearSize = (int) Math.pow(this.dim, numLeftSlots + numRightSlots);
+        ArrayList<Double> outer_prod = new ArrayList<>(outerLinearSize);
+        for (int flatCombined = 0; flatCombined < outerLinearSize; flatCombined++) {
+            int flatLeft = flatCombined / strideRightBlock;
+            int flatRight = flatCombined % strideRightBlock;
+            double leftValue = this.data.get(flatLeft);
+            double rightValue = other.data.get(flatRight);
+            outer_prod.add(leftValue * rightValue);
         }
 
         Tensor outer_prod_tensor = new Tensor("X", outer_prod, new_indices, this.dim);
@@ -115,11 +124,14 @@ public class Tensor {
         int length = this.data.size() / (this.dim * this.dim);
         double[] new_data = new double[length];
 
-        /* Sum over repeated indices : Einstein Summation Convention */
+        /* Sum over repeated indices : Einstein Summation Convention.
+         * Linear index i encodes multi-indices with indices[0] the slowest-varying slot:
+         * digitAtSlot = (i / dim^(n-1-pos)) % dim. */
+        int numSlots = this.indices.length;
         for (int i = 0; i < this.data.size(); i++) {
-            int idx1 = (i / (int)Math.pow(this.dim, idxPos1)) % this.dim;
-            int idx2 = (i / (int)Math.pow(this.dim, idxPos2)) % this.dim;
-            if (idx1 == idx2) {
+            int summationDigitAtPos1 = (i / (int) Math.pow(this.dim, numSlots - 1 - idxPos1)) % this.dim;
+            int summationDigitAtPos2 = (i / (int) Math.pow(this.dim, numSlots - 1 - idxPos2)) % this.dim;
+            if (summationDigitAtPos1 == summationDigitAtPos2) {
                 int new_idx = newIdx(i, idxPos1, idxPos2);
                 new_data[new_idx] += this.data.get(i);
             }
@@ -145,33 +157,33 @@ public class Tensor {
     }
 
 
+    /** Per-slot digits for linear index {@code idx}, matching contract(): slot 0 = indices[0] is slowest. */
     public int[] getIndicesVal(int idx) {
-        int[] index_lst = new int[this.indices.length];
-        for (int i = 0; i < this.indices.length; i++) {
-            int remainder = idx % (int)Math.pow(this.dim, i);
-            index_lst[this.indices.length - (i+1)] = remainder;
+        int numSlots = this.indices.length;
+        int[] digitAtSlot = new int[numSlots];
+        for (int slot = 0; slot < numSlots; slot++) {
+            int powerFromRight = numSlots - 1 - slot;
+            digitAtSlot[slot] = (idx / (int) Math.pow(this.dim, powerFromRight)) % this.dim;
         }
-        return index_lst;
+        return digitAtSlot;
     }
 
+    /** Linear index in the contracted tensor (same big-endian rule on the surviving slots, in order). */
     public int newIdx(int idx, int idx1, int idx2) {
-        int count = 0;
-        int[] index_lst = getIndicesVal(idx);
-        int i = 0;
-        int j = 0;
-
-        while (i < index_lst.length) {
-            if (i == idx1 || i == idx2) {
-                i++;
+        int[] digitAtSlot = getIndicesVal(idx);
+        int numSlots = this.indices.length;
+        int outRank = numSlots - 2;
+        int contractedLinearIndex = 0;
+        int outSlot = 0;
+        for (int slot = 0; slot < numSlots; slot++) {
+            if (slot == idx1 || slot == idx2) {
                 continue;
             }
-            else {
-                count += index_lst[this.indices.length - (i+1)] * Math.pow(this.dim, j);
-                i++;
-                j++;
-            }
+            int weightPower = outRank - 1 - outSlot;
+            contractedLinearIndex += digitAtSlot[slot] * (int) Math.pow(this.dim, weightPower);
+            outSlot++;
         }
-        return count;
+        return contractedLinearIndex;
     }
     
     @Override
