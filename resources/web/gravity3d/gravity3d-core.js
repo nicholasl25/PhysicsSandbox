@@ -23,7 +23,6 @@ class Gravity3DSimulation {
             σ: 5.67e-8
         };
         this.bounce = false;
-        this.useRK4 = false;
         this.coefficientOfRestitution = 1.0;
         this.timeFactor = 86400.0; // 86400 seconds in a day
         this.deltaTime = 1 / 60.0;  // 60 fps
@@ -265,6 +264,10 @@ class Gravity3DSimulation {
         const scaledDt = deltaTime * this.timeFactor;
 
         for (const planet of this.planets) {
+            planet.acceleration = new Vector(3);
+        }
+
+        for (const planet of this.planets) {
             if (toRemove.includes(planet)) continue;
             this.applyForcesToPlanet(planet, toRemove, toAdd, scaledDt);
             this.applyRadiationToPlanet(planet, toRemove, toAdd, scaledDt);
@@ -297,7 +300,7 @@ class Gravity3DSimulation {
         }
 
         for (const planet of this.planets) {
-            planet.updatePosition(deltaTime, this.timeFactor);
+            planet.eulerUpdate(scaledDt);
         }
 
         this.updateCameraPosition();
@@ -315,7 +318,6 @@ class Gravity3DSimulation {
     setSigma(pct) { this.consts.σ = (pct / 100) * 5.67e-8; }
     setTimeFactor(value) { this.timeFactor = value; }
     setBounce(enabled) { this.bounce = enabled; }
-    setRK4(enabled) { this.useRK4 = enabled; }
 
     dispose() {
         if (this.animationFrameId) {

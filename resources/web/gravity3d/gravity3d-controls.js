@@ -168,13 +168,14 @@ function setupControls() {
     timeFactorSlider.addEventListener('input', applyTimeFromSlider);
     applyTimeFromSlider();
 
-    document.getElementById('bounce-checkbox').addEventListener('change', (e) => {
-        simulation.setBounce(e.target.checked);
+    function applyCollisionModeFromUI() {
+        const selected = document.querySelector('input[name="collision-mode"]:checked');
+        simulation.setBounce(selected !== null && selected.value === 'bounce');
+    }
+    document.querySelectorAll('input[name="collision-mode"]').forEach((radio) => {
+        radio.addEventListener('change', applyCollisionModeFromUI);
     });
-
-    document.getElementById('rk4-checkbox').addEventListener('change', (e) => {
-        simulation.setRK4(e.target.checked);
-    });
+    applyCollisionModeFromUI();
 
     setInterval(() => {
         const pauseText = document.getElementById('pause-text');

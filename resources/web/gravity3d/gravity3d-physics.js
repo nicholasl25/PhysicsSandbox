@@ -6,7 +6,7 @@
 (function () {
     'use strict';
 
-    /** For one planet: sum gravity from others, handle collision/merge, then F=ma and update velocity. */
+    /** For one planet: sum gravity from others, handle collision/merge, then F=ma → store acceleration. */
     Gravity3DSimulation.prototype.applyForcesToPlanet = function (planet, toRemove, toAdd, scaledDt) {
         let totalForce = new Vector([0.0, 0.0, 0.0]);
         for (const other of this.planets) {
@@ -28,8 +28,7 @@
             totalForce = totalForce.add(forceVec);
         }
         const state = planet.getState();
-        const acceleration = totalForce.divide(state.getMass()); // kg
-        planet.updateVelocity(acceleration, scaledDt);
+        planet.acceleration = totalForce.divide(state.getMass());
     };
 
     Gravity3DSimulation.prototype.applyRadiationToPlanet = function (planet, toRemove, toAdd, scaledDt) {

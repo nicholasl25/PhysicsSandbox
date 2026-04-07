@@ -130,18 +130,18 @@
                     <input type="range" id="timefactor-slider" min="0" max="300" value="150" step="1">
                 </div>
                 
-                <div class="control-group">
-                    <label>
-                        <input type="checkbox" id="bounce-checkbox">
-                        Bounce
-                    </label>
-                </div>
-                
-                <div class="control-group">
-                    <label>
-                        <input type="checkbox" id="rk4-checkbox">
-                        RK4 Integration
-                    </label>
+                <div class="control-group collision-mode-group">
+                    <label>On collision</label>
+                    <div class="collision-mode-options">
+                        <label class="radio-label">
+                            <input type="radio" name="collision-mode" id="collision-merge" value="merge" checked>
+                            Merge
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="collision-mode" id="collision-bounce" value="bounce">
+                            Bounce
+                        </label>
+                    </div>
                 </div>
             </div>
             
