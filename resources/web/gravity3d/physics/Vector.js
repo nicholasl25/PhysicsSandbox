@@ -1,6 +1,11 @@
 /**
  * Vector class - represents a mathematical vector as an array.
  * Supports common vector operations needed for physics simulations.
+ *
+ * Operator overloading: JavaScript does not support `+`, `-`, or `*` for custom
+ * objects (they coerce to string/number via toString/valueOf, not vector math).
+ * Use `.add()`, `.subtract()`, `.multiply(scalar)`, and `.divide(scalar)`; chain
+ * when helpful, e.g. `a.add(b).multiply(0.5)`.
  */
 class Vector {
     constructor(components) {

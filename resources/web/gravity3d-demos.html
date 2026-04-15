@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Gravity — demos</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .showcase-container h1 {
+            color: #fff;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .showcase-container .lead {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+        }
+        .showcase-container .integrator-note {
+            color: rgba(255, 255, 255, 0.92);
+            font-size: 0.95rem;
+            line-height: 1.55;
+            margin-bottom: 2rem;
+            padding: 1rem 1.25rem;
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 10px;
+            border-left: 4px solid #10b981;
+        }
+        .showcase-container section {
+            margin-bottom: 2.5rem;
+        }
+        .showcase-container h2 {
+            color: #fff;
+            font-size: 1.35rem;
+            margin-bottom: 0.75rem;
+        }
+        .showcase-container figure {
+            margin: 0;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        .showcase-container figure img,
+        .showcase-container figure video {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+        .showcase-container figcaption {
+            color: #444;
+            font-size: 0.9rem;
+            margin-top: 0.75rem;
+            line-height: 1.45;
+        }
+        .showcase-container .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+        .showcase-container .actions a {
+            display: inline-block;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body class="showcase-page">
+    <div class="showcase-container">
+        <h1>3D gravity simulation — demos</h1>
+        <p class="lead">Screen captures from the web sim: orbits, integrator comparison, and visuals.</p>
+        <p class="integrator-note">The sim supports several time-stepping schemes. Plain <strong>Euler</strong> adds energy quickly and blows up orbits; <strong>semi-implicit Euler</strong> and <strong>Verlet</strong> stay much closer to the true trajectory for the same step size. Prefer semi-implicit Euler or Verlet for long or fast runs. <strong>RK4</strong> (Runge–Kutta 4th order) tracks orbits accurately in many cases, but it is not symplectic, so total energy tends to drift over very long runs; it also does more work per step, so it may handle fewer bodies smoothly than semi-implicit Euler or Verlet at the same frame rate.</p>
+
+        <div class="actions">
+            <a class="sim-button web-button" href="gravity3d/gravity3d.html">Open simulation</a>
+            <a class="sim-button demos-button" href="index.html">Back to home</a>
+        </div>
+
+        <section id="orbit">
+            <h2>Sun–Earth orbit</h2>
+            <figure>
+                <video controls playsinline src="/demos/gravity3d/Sun_Earth_Demo.mov"></video>
+                <figcaption>Stable between the Earth and Sun. Demonstration of adjusting the gravitational constant to effect orbits.</figcaption>
+            </figure>
+        </section>
+
+        <section id="integrators">
+            <h2>Integrator comparison (same scenario)</h2>
+            <figure>
+                <video controls playsinline src="/demos/gravity3d/Euler.mov"></video>
+                <figcaption><strong>Euler</strong> — orbit spirals or drifts badly; error accumulates fast.</figcaption>
+            </figure>
+            <figure style="margin-top: 1rem;">
+                <video controls playsinline src="/demos/gravity3d/Semi_Euler.mov"></video>
+                <figcaption><strong>Semi-implicit Euler</strong> — much more stable than Euler at the same Δt.</figcaption>
+            </figure>
+            <figure style="margin-top: 1rem;">
+                <video controls playsinline src="/demos/gravity3d/Verlet.mov"></video>
+                <figcaption><strong>Verlet</strong> — good long-term behavior, comparable to semi-implicit Euler for many setups.</figcaption>
+            </figure>
+            <figure style="margin-top: 1rem;">
+                <video controls playsinline src="/demos/gravity3d/RK4.mov"></video>
+                <figcaption><strong>RK4</strong> — accurate short-to-medium-term motion, but not symplectic: energy is not conserved in the long run. Four gravity evaluations per body per step make it heavier than semi-implicit Euler or Verlet, so expect lower practical body counts at the same speed.</figcaption>
+            </figure>
+        </section>
+
+        <section id="graphics">
+            <h2>Graphics</h2>
+            <figure>
+                <img src="/demos/gravity3d/Rocky_planet_next_to_blue_giant.png" alt="Rocky planet beside a blue giant star" loading="lazy">
+                <figcaption>Rocky planet next to a blue giant.</figcaption>
+            </figure>
+            <figure style="margin-top: 1rem;">
+                <img src="/demos/gravity3d/Rocky_planet_and_star_graphics.png" alt="Rocky planet and star lighting" loading="lazy">
+                <figcaption>Planet and star lighting / materials.</figcaption>
+            </figure>
+        </section>
+    </div>
+</body>
+</html>

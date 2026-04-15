@@ -52,6 +52,14 @@ public class WebServer {
             // Check if it's a texture file
             if (path.startsWith("/textures/")) {
                 filePath = Paths.get("resources" + path);
+            } else if (path.startsWith("/demos/")) {
+                String rel = path.substring("/demos/".length());
+                if (rel.isEmpty() || rel.contains("..")) {
+                    send404(exchange);
+                    return;
+                }
+                String[] segments = rel.split("/");
+                filePath = Paths.get("demos", segments);
             } else {
                 // Otherwise, serve from web directory
                 filePath = Paths.get("resources/web" + path);
@@ -80,6 +88,8 @@ public class WebServer {
             if (path.endsWith(".json")) return "application/json";
             if (path.endsWith(".png")) return "image/png";
             if (path.endsWith(".jpg") || path.endsWith(".jpeg")) return "image/jpeg";
+            if (path.endsWith(".mov")) return "video/quicktime";
+            if (path.endsWith(".mp4")) return "video/mp4";
             return "application/octet-stream";
         }
         

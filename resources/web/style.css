@@ -203,3 +203,27 @@ body {
 .desktop-button:hover {
     background: #5568d3;
 }
+
+body.showcase-page {
+    display: block;
+    align-items: stretch;
+    padding: 2rem 1rem;
+}
+
+.showcase-container {
+    max-width: 960px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.sim-button.demos-button {
+    display: inline-block;
+    text-align: center;
+    text-decoration: none;
+    background: #d97706;
+    line-height: normal;
+}
+
+.sim-button.demos-button:hover {
+    background: #b45309;
+}

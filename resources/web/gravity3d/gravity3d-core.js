@@ -13,6 +13,10 @@ class Gravity3DSimulation {
 
         // Simulation state
         this.planets = [];
+        /** @type {Planet[]} merged-away bodies this frame; cleared at start of each update() */
+        this.pendingRemove = [];
+        /** @type {Planet[]} new bodies to add after removals; cleared at start of each update() */
+        this.pendingAdd = [];
         this.selectedPlanet = null;
         this.isPaused = false;
 
@@ -24,6 +28,8 @@ class Gravity3DSimulation {
         };
         this.bounce = false;
         this.coefficientOfRestitution = 1.0;
+        /** @type {'euler'|'semiEuler'|'verlet'|'rk4'} */
+        this.integrator = 'rk4';
         this.timeFactor = 86400.0; // 86400 seconds in a day
         this.deltaTime = 1 / 60.0;  // 60 fps
 
@@ -177,6 +183,8 @@ class Gravity3DSimulation {
         }
         this.selectedPlanet = null;
         this.planets = [];
+        this.pendingRemove.length = 0;
+        this.pendingAdd.length = 0;
         this.orbitTrails.clear();
         this.updateCameraPosition();
     }
@@ -259,22 +267,18 @@ class Gravity3DSimulation {
             this.cameraDistance = this.getMinCameraDistanceFor(this.selectedPlanet);
         }
 
-        const toAdd = [];
-        const toRemove = [];
+        this.pendingRemove.length = 0;
+        this.pendingAdd.length = 0;
         const scaledDt = deltaTime * this.timeFactor;
 
         for (const planet of this.planets) {
-            planet.acceleration = new Vector(3);
+            if (this.pendingRemove.includes(planet)) continue;
+            this.resolveCollisionsForPlanet(planet);
+            this.applyRadiationToPlanet(planet, scaledDt);
+            this.radiateHeatAway(planet, scaledDt);
         }
 
-        for (const planet of this.planets) {
-            if (toRemove.includes(planet)) continue;
-            this.applyForcesToPlanet(planet, toRemove, toAdd, scaledDt);
-            this.applyRadiationToPlanet(planet, toRemove, toAdd, scaledDt);
-            this.radiateHeatAway(planet, toRemove, scaledDt);
-        }
-
-        for (const planet of toRemove) {
+        for (const planet of this.pendingRemove) {
             const index = this.planets.indexOf(planet);
             if (index > -1) {
                 this.disposePlanetMesh(planet);
@@ -284,11 +288,11 @@ class Gravity3DSimulation {
             }
         }
 
-        for (const merged of toAdd) {
+        for (const merged of this.pendingAdd) {
             this.planets.push(merged);
             this.orbitTrails.set(merged, []);
             this.createPlanetMesh(merged);
-            if (this.selectedPlanet && (toRemove.includes(this.selectedPlanet))) {
+            if (this.selectedPlanet && this.pendingRemove.includes(this.selectedPlanet)) {
                 this.selectedPlanet = merged;
                 merged.clicked();
                 this.cameraDistance = this.getMinCameraDistanceFor(merged);
@@ -299,8 +303,21 @@ class Gravity3DSimulation {
             this.selectedPlanet = null;
         }
 
-        for (const planet of this.planets) {
-            planet.eulerUpdate(scaledDt);
+        this.applyGravitationalAccelerationAll();
+        switch (this.integrator) {
+            case 'euler':
+                this.eulerUpdateAll(scaledDt);
+                break;
+            case 'verlet':
+                this.verletUpdateAll(scaledDt);
+                break;
+            case 'rk4':
+                this.rk4UpdateAll(scaledDt);
+                break;
+            case 'semiEuler':
+            default:
+                this.semiEulerUpdateAll(scaledDt);
+                break;
         }
 
         this.updateCameraPosition();
@@ -318,6 +335,8 @@ class Gravity3DSimulation {
     setSigma(pct) { this.consts.σ = (pct / 100) * 5.67e-8; }
     setTimeFactor(value) { this.timeFactor = value; }
     setBounce(enabled) { this.bounce = enabled; }
+    /** @param {'euler'|'semiEuler'|'verlet'|'rk4'} mode */
+    setIntegrator(mode) { this.integrator = mode; }
 
     dispose() {
         if (this.animationFrameId) {

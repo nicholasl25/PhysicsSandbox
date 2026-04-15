@@ -48,6 +48,30 @@ class Planet {
         this.#updateRotation(scaledDt);
     }
 
+    verletPositionUpdate(scaledDt) {
+        const displacement_v = this.vel.multiply(scaledDt)
+        const displacement_a = this.acceleration.multiply(0.5 * scaledDt * scaledDt);
+        const displacement = displacement_v.add(displacement_a);
+        this.pos = this.pos.add(displacement);
+        this.#updateRotation(scaledDt);
+    }
+
+    verletVelocityUpdate(newAcceleration, scaledDt) {
+        const avgAcc = newAcceleration.add(this.acceleration).multiply(0.5);
+        this.vel = this.vel.add(avgAcc.multiply(scaledDt));
+        this.acceleration = newAcceleration;
+    }
+
+    /** RK4: r ← r + (Δt/6)(kR1 + 2kR2 + 2kR3 + kR4); kR1…kR4 are Vector dr/dt samples. */
+    rk4PositionUpdate(kR1, kR2, kR3, kR4, scaledDt) {
+        this.pos = this.pos.add(kR1.add(kR2.multiply(2)).add(kR3.multiply(2)).add(kR4).multiply(scaledDt / 6));
+    }
+
+    /** RK4: v ← v + (Δt/6)(kV1 + 2kV2 + 2kV3 + kV4); kV1…kV4 are Vector dv/dt samples. */
+    rk4VelocityUpdate(kV1, kV2, kV3, kV4, scaledDt) {
+        this.vel = this.vel.add(kV1.add(kV2.multiply(2)).add(kV3.multiply(2)).add(kV4).multiply(scaledDt / 6));
+    }
+
     // --- Geometry & mechanics ---
 
     /**
