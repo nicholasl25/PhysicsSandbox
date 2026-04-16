@@ -1,4 +1,4 @@
-package simulations.Schwarzchild;
+package simulations.tensor;
 
 public class Index {
     

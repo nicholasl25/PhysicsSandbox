@@ -1,4 +1,4 @@
-package simulations.Schwarzchild;
+package simulations.tensor;
 
 import java.util.ArrayList;
 
@@ -33,9 +33,10 @@ public class Tensor {
     }
 
     public Tensor mulTensor(Tensor other){
-        if (this.dim != other.dim) {
-            throw new IllegalArgumentException("Dimensions of Tensors must match to multiply");
+        if (this.dim != other.dim && this.dim != 0 && other.dim != 0) {
+            throw new TensorDimensionMismatchException("Dimensions of Tensors must match to multiply");
         }
+        int baseDim = (this.dim != 0) ? this.dim : other.dim;
         int total_idx = this.indices.length + other.indices.length;
 
         Index[] new_indices = new Index[total_idx];
@@ -50,8 +51,8 @@ public class Tensor {
          * tensor's components vary fastest. That is flatCombined = flatLeft·dim^nb + flatRight. */
         int numLeftSlots = this.indices.length;
         int numRightSlots = other.indices.length;
-        int strideRightBlock = (int) Math.pow(this.dim, numRightSlots);
-        int outerLinearSize = (int) Math.pow(this.dim, numLeftSlots + numRightSlots);
+        int strideRightBlock = (int) Math.pow(baseDim, numRightSlots);
+        int outerLinearSize = (int) Math.pow(baseDim, numLeftSlots + numRightSlots);
         ArrayList<Double> outer_prod = new ArrayList<>(outerLinearSize);
         for (int flatCombined = 0; flatCombined < outerLinearSize; flatCombined++) {
             int flatLeft = flatCombined / strideRightBlock;
@@ -61,7 +62,7 @@ public class Tensor {
             outer_prod.add(leftValue * rightValue);
         }
 
-        Tensor outer_prod_tensor = new Tensor("X", outer_prod, new_indices, this.dim);
+        Tensor outer_prod_tensor = new Tensor("X", outer_prod, new_indices, baseDim);
 
         /* Check for duplicate co/contravariant pairs of indices */
         ArrayList<Character> contracted_indices = new ArrayList<>();
@@ -73,13 +74,13 @@ public class Tensor {
                     }
                     else if (new_indices[i].covariant()) {
                         String idx = Character.toString(new_indices[i].index());
-                        String s = String.format("Error Concatinating Index %s in Tensor Multiplication: Duplicated Covariant Index", idx);
-                        System.out.println(s);
+                        String s = String.format("Error concatenating index %s in tensor multiplication: duplicated covariant index", idx);
+                        throw new TensorConsistencyException(s);
                     }
                     else {
                         String idx = Character.toString(new_indices[i].index());
-                        String s = String.format("Error Concatinating Index %s in Tensor Multiplication: Duplicated Contravariant Index", idx);
-                        System.out.println(s);
+                        String s = String.format("Error concatenating index %s in tensor multiplication: duplicated contravariant index", idx);
+                        throw new TensorConsistencyException(s);
                     }
                 }
 
@@ -114,12 +115,11 @@ public class Tensor {
             }
         }
 
-
-        if (idxPos1 == idxPos2) {
-            throw new IllegalArgumentException("Contracted indices can not be in the same position");
-        }
         if (idxPos1 == -1 || idxPos2 == -1) {
-            throw new IllegalArgumentException(String.format("Less than two indices found with id : %s", idx));
+            throw new TensorContractionException(String.format("Less than two indices found with id : %s", idx));
+        }
+        if (idxPos1 == idxPos2) {
+            throw new TensorContractionException("Contracted indices can not be in the same position");
         }
         int length = this.data.size() / (this.dim * this.dim);
         double[] new_data = new double[length];
@@ -282,7 +282,7 @@ public class Tensor {
 
     public void checkConsistent() {
         if (this.data.size() != Math.pow(this.dim, this.indices.length)) {
-            throw new IllegalArgumentException("Length of Tensor does not align with dimension and number of indices");
+            throw new TensorConsistencyException("Length of Tensor does not align with dimension and number of indices");
         }
 
         for (int i = 0; i < this.indices.length; i++) {
@@ -291,7 +291,7 @@ public class Tensor {
                 Index idx2 = this.indices[j];
                 boolean invalid = (idx1.index() == idx2.index()) && (idx1.covariant() == idx2.covariant());
                 if (invalid) {
-                    throw new IllegalArgumentException("Duplicate co/contravariant index");
+                    throw new TensorConsistencyException("Duplicate co/contravariant index");
                 }
             }
         }
