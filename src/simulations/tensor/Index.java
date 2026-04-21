@@ -1,5 +1,6 @@
 package simulations.tensor;
 
+/** Labels one tensor slot: index letter plus covariant ({@code true}, subscript) vs contravariant ({@code false}, superscript). */
 public class Index {
     
     private char index;

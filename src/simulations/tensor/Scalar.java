@@ -2,6 +2,7 @@ package simulations.tensor;
 
 import java.util.ArrayList;
 
+/** Rank-0 tensor: single component with {@code dim == 0} and empty index list. */
 public class Scalar extends Tensor {
 
     public Scalar(String name, double value) {

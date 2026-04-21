@@ -2,6 +2,11 @@ package simulations.tensor;
 
 import java.util.ArrayList;
 
+/**
+ * Dense tensor stored as a flat {@code data} list: slot {@code indices[0]} is slowest-varying
+ * (see {@link #contract(char)} / {@link #mulTensor(Tensor)}). {@code dim} is the size per index;
+ * rank 0 uses {@code dim == 0} (see {@link Scalar}).
+ */
 public class Tensor {
 
     String name;
@@ -9,7 +14,8 @@ public class Tensor {
     ArrayList<Double> data;
     int dim;
     double size;
-    
+
+    /** Validates {@code data.size() == dim^rank} and no duplicate same-type index letters. */
     public Tensor(String name, ArrayList<Double> data,  Index[] indices, int dim) {
         this.data = data;
         this.indices = indices;
@@ -32,6 +38,10 @@ public class Tensor {
         return this.data;
     }
 
+    /**
+     * Tensor product: outer product on components, then Einstein sum over every covariant/contravariant
+     * index pair that shares the same letter.
+     */
     public Tensor mulTensor(Tensor other){
         if (this.dim != other.dim && this.dim != 0 && other.dim != 0) {
             throw new TensorDimensionMismatchException("Dimensions of Tensors must match to multiply");
@@ -98,6 +108,7 @@ public class Tensor {
 
     }
 
+    /** Sums over one repeated index letter (exactly two slots with that letter); removes both slots from the result. */
     public Tensor contract(char idx) {
         /* Find position of two summation indices */
         int idxPos1 = -1;
