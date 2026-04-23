@@ -82,7 +82,7 @@
         <section id="orbit">
             <h2>Sun–Earth orbit</h2>
             <figure>
-                <video controls playsinline src="/demos/gravity3d/Sun_Earth_Demo.mov"></video>
+                <video controls playsinline src="demos/gravity3d/Sun_Earth_Demo.mov"></video>
                 <figcaption>Stable between the Earth and Sun. Demonstration of adjusting the gravitational constant to effect orbits.</figcaption>
             </figure>
         </section>
@@ -90,19 +90,19 @@
         <section id="integrators">
             <h2>Integrator comparison (same scenario)</h2>
             <figure>
-                <video controls playsinline src="/demos/gravity3d/Euler.mov"></video>
+                <video controls playsinline src="demos/gravity3d/Euler.mov"></video>
                 <figcaption><strong>Euler</strong> — orbit spirals or drifts badly; error accumulates fast.</figcaption>
             </figure>
             <figure style="margin-top: 1rem;">
-                <video controls playsinline src="/demos/gravity3d/Semi_Euler.mov"></video>
+                <video controls playsinline src="demos/gravity3d/Semi_Euler.mov"></video>
                 <figcaption><strong>Semi-implicit Euler</strong> — much more stable than Euler at the same Δt.</figcaption>
             </figure>
             <figure style="margin-top: 1rem;">
-                <video controls playsinline src="/demos/gravity3d/Verlet.mov"></video>
+                <video controls playsinline src="demos/gravity3d/Verlet.mov"></video>
                 <figcaption><strong>Verlet</strong> — good long-term behavior, comparable to semi-implicit Euler for many setups.</figcaption>
             </figure>
             <figure style="margin-top: 1rem;">
-                <video controls playsinline src="/demos/gravity3d/RK4.mov"></video>
+                <video controls playsinline src="demos/gravity3d/RK4.mov"></video>
                 <figcaption><strong>RK4</strong> — accurate short-to-medium-term motion, but not symplectic: energy is not conserved in the long run. Four gravity evaluations per body per step make it heavier than semi-implicit Euler or Verlet, so expect lower practical body counts at the same speed.</figcaption>
             </figure>
         </section>
@@ -110,11 +110,11 @@
         <section id="graphics">
             <h2>Graphics</h2>
             <figure>
-                <img src="/demos/gravity3d/Rocky_planet_next_to_blue_giant.png" alt="Rocky planet beside a blue giant star" loading="lazy">
+                <img src="demos/gravity3d/Rocky_planet_next_to_blue_giant.png" alt="Rocky planet beside a blue giant star" loading="lazy">
                 <figcaption>Rocky planet next to a blue giant.</figcaption>
             </figure>
             <figure style="margin-top: 1rem;">
-                <img src="/demos/gravity3d/Rocky_planet_and_star_graphics.png" alt="Rocky planet and star lighting" loading="lazy">
+                <img src="demos/gravity3d/Rocky_planet_and_star_graphics.png" alt="Rocky planet and star lighting" loading="lazy">
                 <figcaption>Planet and star lighting / materials.</figcaption>
             </figure>
         </section>

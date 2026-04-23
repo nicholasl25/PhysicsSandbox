@@ -18,24 +18,34 @@ function toggleDropdown(id) {
     }
 }
 
+function canLaunchDesktopSims() {
+    const h = window.location.hostname;
+    return h === 'localhost' || h === '127.0.0.1';
+}
+
 async function launchSimulation(type) {
     try {
         // Gravity3D runs as a webapp, others launch Java
         if (type === 'gravity3d') {
-            // Open the Gravity3D webapp in a new window/tab
-            window.location.href = '/gravity3d/gravity3d.html';
-        } else {
-            // Launch Java applications for Gravity2D and Schwarzchild
-        const response = await fetch(`/api/launch/${type}`, {
+            // Resolve against current URL so GitHub Pages project sites (/repo/) work (not root-absolute /gravity3d/…)
+            window.location.href = new URL('gravity3d/gravity3d.html', window.location.href).toString();
+            return;
+        }
+        if (!canLaunchDesktopSims()) {
+            window.alert(
+                'Desktop simulations need the local Java server. Clone this repository, run ./run.sh from its root, then open http://localhost:8080 in your browser.'
+            );
+            return;
+        }
+        const response = await fetch(`${window.location.origin}/api/launch/${type}`, {
             method: 'POST'
         });
-        
+
         if (response.ok) {
             console.log(`Launched ${type} simulation`);
         } else {
             const error = await response.text();
             alert(`Error launching simulation: ${error}`);
-            }
         }
     } catch (error) {
         alert(`Error: ${error.message}`);
