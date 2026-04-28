@@ -186,7 +186,6 @@ public class WebServer {
                 return;
             }
             
-            String id = parts[3];
             String subPath = parts.length > 4 ? parts[4] : "";
             
             // GET /api/simulations/{id}/state

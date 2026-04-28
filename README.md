@@ -82,7 +82,8 @@ The web application is self-contained and requires no backend server when deploy
 
 ```
 Physics-/
-├── src/                              # Java source code (Desktop apps)
+├── src/                              # Java source code (Desktop apps + shared libs)
+│   ├── tensor/                       # Indexed tensor math (package `tensor`; see `src/tensor/README.md`)
 │   └── simulations/
 │       ├── Main.java                 # Entry point - starts web server
 │       ├── WebServer.java            # HTTP server for launch page
@@ -111,6 +112,8 @@ Physics-/
 │   │           └── Planet.js
 │   └── textures/                     # Shared planet textures
 │
+├── test/                             # Java unit tests (Maven)
+│   └── tensor/                       # Tests for `tensor` package
 ├── out/                              # Compiled Java classes
 ├── libs/                             # Java dependencies (JOML - unused)
 └── run.sh                            # Build and run script
@@ -152,9 +155,9 @@ The web application files are in `resources/web/`. To develop:
 3. For static deployment, test by serving `resources/web/` directory
 
 ### Java Application Development
-Java source files are in `src/simulations/`. Compile with:
+Java sources include `src/simulations/` (apps) and `src/tensor/` (tensor package). Prefer Maven for builds (`mvn test`). A manual compile example:
 ```bash
-javac -d out -cp "out:libs/joml/*.jar" src/simulations/**/*.java
+javac -d out -cp "out:libs/joml/*.jar" src/tensor/**/*.java src/simulations/**/*.java
 ```
 
 ### Tests (Maven + JUnit 5)

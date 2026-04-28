@@ -1,15 +1,21 @@
-# Tensor Module Purpose
+# Tensor module
+
+**Location:** Java sources live under `src/tensor/` (package `tensor`). Unit tests live under `test/tensor/` with the same package name.
+
+Simulation code can depend on this layer via normal imports, for example `import tensor.Tensor;`.
+
+## Purpose
 
 This module exists to provide a clear and approachable interface for working with indexed tensors in simulation code.
 
-## Design Goal
+## Design goal
 
 The goal is readability and usability for physics expressions, not high-speed, low-level linear algebra throughput.  
 In particular, this module is **not** intended to replace efficient GPU BLAS libraries or other highly optimized tensor kernels.
 
 Instead, it should make it straightforward to express relationships in index notation and manipulate tensor objects directly in Java code.
 
-## Long-Term Direction
+## Long-term direction
 
 The intended direction is to support writing equations in a form that mirrors physics notation, e.g.:
 
@@ -17,7 +23,7 @@ The intended direction is to support writing equations in a form that mirrors ph
 
 for Einstein-style equations used by the simulation layer.
 
-## Shape Assumption
+## Shape assumption
 
 All tensors in this module are assumed to be square/cubical across indices:
 

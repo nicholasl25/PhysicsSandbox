@@ -1,4 +1,4 @@
-package simulations.tensor;
+package tensor;
 
 import java.util.ArrayList;
 import java.util.Arrays;

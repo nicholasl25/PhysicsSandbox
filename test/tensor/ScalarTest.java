@@ -1,4 +1,4 @@
-package simulations.tensor;
+package tensor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,10 +33,18 @@ public class ScalarTest {
         @Test
         void testScalarScalarMult() {
             Tensor scalarProd = S0.mulTensor(S1);
-            assertEquals(-5.0, scalarProd.getdata().get(0), "Standard scalar multiplication");
+            assertTrue(scalarProd instanceof Scalar, "Scalar × Scalar should narrow to Scalar");
+            assertEquals(-5.0, ((Scalar) scalarProd).getValue(), "Standard scalar multiplication");
             assertEquals(1, scalarProd.getdata().size());
             assertEquals(0, scalarProd.getIndices().length);
             assertEquals(0, scalarProd.getDim(), "dim=0 should remain scalar-dimensionless");
+        }
+
+        @Test
+        void testScalarScalarAdd() {
+            Scalar sum = S0.add(S1);
+            assertEquals(9.5, sum.getValue(), 1e-12);
+            assertEquals(0, sum.getDim());
         }
 
         @Test
@@ -51,6 +59,15 @@ public class ScalarTest {
             assertTrue(expected.equals(result2), "Vector scalar multiplication");
             assertEquals(4, result2.getDim(), "Multiplying by dim=0 scalar should preserve tensor dimension");
             assertTrue(result1.strictequals(result2), "Vector scalar multiplication should be symmetric");
+        }
+
+        @Test
+        void scalarTimesVectorSubclass_returnsVector() {
+            Vector v = new Vector("v", new double[] { 1.0, 2.0, 3.0, 4.0 }, a1, 4);
+            Tensor r = S0.mulTensor(v);
+            assertTrue(r instanceof Vector, "Scalar × Vector should narrow to Vector");
+            ArrayList<Double> expected = new ArrayList<>(Arrays.asList(10.0, 20.0, 30.0, 40.0));
+            assertTrue(new Tensor("t", expected, v.getIndices(), v.getDim()).equals(r));
         }
     }
 }

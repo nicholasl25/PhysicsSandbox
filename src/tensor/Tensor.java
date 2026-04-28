@@ -1,11 +1,11 @@
-package simulations.tensor;
+package tensor;
 
 import java.util.ArrayList;
 
 /**
  * Dense tensor stored as a flat {@code data} list: slot {@code indices[0]} is slowest-varying
  * (see {@link #contract(char)} / {@link #mulTensor(Tensor)}). {@code dim} is the size per index;
- * rank 0 uses {@code dim == 0} (see {@link Scalar}).
+ * rank 0 uses {@code dim == 0} (see {@link Scalar}); rank 1 is wrapped by {@link Vector}.
  */
 public class Tensor {
 
