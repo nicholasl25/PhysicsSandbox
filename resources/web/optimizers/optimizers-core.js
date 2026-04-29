@@ -1,5 +1,5 @@
 /**
- * Optimizer landscape demo — stepping (GD, SGD noise, SGD+momentum, Adagrad, RMSProp, Adam).
+ * 2D Optimizer Simulation — stepping (GD, SGD noise, SGD+momentum, Adagrad, RMSProp, Adam).
  * Depends: app.getParams(kind) for per-method hyperparameters.
  * Exposes: window.OptimizerCore
  */
@@ -30,7 +30,8 @@
      * @param {{ batch?: number }} params
      */
     function gradForStep(kind, params, gx, gy) {
-        if (kind !== 'sgd' && kind !== 'sgdm') return [gx, gy];
+        const usesStochasticGrad = kind === 'sgd' || kind === 'sgdm' || kind === 'adagrad' || kind === 'rmsprop' || kind === 'adam';
+        if (!usesStochasticGrad) return [gx, gy];
         const B = Math.max(1, parseInt(String(params.batch), 10) || 1);
         const scale = 0.25 / Math.sqrt(B);
         return [gx + scale * randn(), gy + scale * randn()];

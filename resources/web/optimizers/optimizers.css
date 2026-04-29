@@ -1,5 +1,5 @@
 /**
- * Optimizer landscape — layout mirrors gravity3d/gravity3d.css (#app-container, #canvas-container, #control-panel).
+ * 2D Optimizer Simulation — layout mirrors gravity3d/gravity3d.css (#app-container, #canvas-container, #control-panel).
  */
 * {
     margin: 0;
@@ -82,6 +82,22 @@ body.optimizer-sim-page {
     flex-shrink: 0;
 }
 
+.loss-gradient-swatch {
+    width: 96px;
+    height: 12px;
+    border-radius: 999px;
+    background-image: linear-gradient(
+        to right,
+        #440154 0%,
+        #3b528b 25%,
+        #21918c 50%,
+        #5ec962 75%,
+        #fde725 100%
+    );
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+}
+
 #control-panel {
     width: 326px;
     flex-shrink: 0;
@@ -89,7 +105,7 @@ body.optimizer-sim-page {
     display: flex;
     flex-direction: column;
     border-left: 1px solid var(--sidebar-border);
-    border-radius: var(--sidebar-radius) 0 0 var(--sidebar-radius);
+    border-radius: var(--sidebar-radius);
     box-shadow: var(--sidebar-shadow);
     overflow: hidden;
 }
@@ -286,6 +302,15 @@ body.optimizer-sim-page {
     margin-bottom: 0;
 }
 
+.opt-inline-pair {
+    display: flex;
+    gap: 8px;
+}
+
+.opt-inline-pair .control-group {
+    flex: 1;
+}
+
 .opt-rounds-display {
     font-size: 12px;
     font-weight: 600;
@@ -445,7 +470,7 @@ body.optimizer-sim-page {
     padding: 14px 16px;
     border-top: 1px solid var(--sidebar-border);
     background: rgba(0, 0, 0, 0.18);
-    border-radius: 0 0 var(--sidebar-radius) 0;
+    border-radius: 0;
 }
 
 #control-footer a {

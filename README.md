@@ -1,11 +1,11 @@
 # PhysicsSandbox
 
-A physics simulation platform featuring web-based and desktop applications for gravitational dynamics, black-hole ray tracing, and an interactive optimizer landscape demo.
+A physics simulation platform featuring web-based and desktop applications for gravitational dynamics, black-hole ray tracing, and an interactive 2D Optimizer Simulation.
 
 ## Overview
 
 PhysicsSandbox includes:
-- **Web Applications**: 3D gravity (JavaScript/Three.js) and a 2D optimizer landscape demo (Canvas)
+- **Web Applications**: 3D gravity (JavaScript/Three.js) and a 2D Optimizer Simulation (Canvas)
 - **Desktop Applications**: Java-based 2D gravity and black hole simulations (Java Swing)
 
 ## Features
@@ -22,7 +22,7 @@ PhysicsSandbox includes:
 - **Adjustable Parameters**: Gravity constant, time factor, bounce mode
 - **No Installation Required**: Runs entirely in your browser
 
-### Optimizer landscape (Web)
+### 2D Optimizer Simulation (Web)
 - **Synthetic losses**: Quadratic bowl, elongated valley, and Rosenbrock surfaces with a loss heatmap
 - **Methods**: GD, SGD, SGD with momentum, Adagrad, RMSProp, and Adam; enable several at once to compare paths and steps to convergence from the same start
 - **Controls**: Per-method learning rate and parameters in collapsible panels; step once or run until ‖∇L‖ is below tolerance; click the plot to set θ₀ for all active runners
@@ -52,7 +52,7 @@ PhysicsSandbox includes:
    ./run.sh
    ```
 2. Open your browser to `http://localhost:8080`
-3. Under **Web Applications**, click **Launch 3D Simulation** or **Launch Optimizer Simulation**
+3. Under **Web Applications**, click **Launch 3D Simulation** or **Launch 2D Optimizer Simulation**
 
 ### Desktop Applications
 1. Start the web server:
@@ -76,7 +76,7 @@ The web application is self-contained and requires no backend server when deploy
 ### Web Application
 - **JavaScript/ES6**: Modern JavaScript for physics and UI
 - **Three.js**: 3D graphics rendering with WebGL (gravity)
-- **Canvas 2D**: Heatmap and trajectories (optimizer demo)
+- **Canvas 2D**: Heatmap and trajectories (2D Optimizer Simulation)
 - **HTML5/CSS3**: Launch page and sim chrome
 
 ### Desktop Applications
@@ -116,7 +116,7 @@ Physics-/
 │   │   │       ├── Vector.js
 │   │   │       ├── State.js
 │   │   │       └── Planet.js
-│   │   └── optimizers/               # Optimizer landscape demo
+│   │   └── optimizers/               # 2D Optimizer Simulation
 │   │       ├── index.html
 │   │       ├── optimizers.css
 │   │       ├── optimizers-landscapes.js

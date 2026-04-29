@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Optimizer landscape — PhysicsSandbox</title>
+    <title>2D Optimizer Simulation — PhysicsSandbox</title>
     <link rel="stylesheet" href="optimizers.css">
 </head>
 <body class="optimizer-sim-page">
@@ -12,7 +12,7 @@
             <div id="opt-canvas-wrap">
                 <canvas id="opt-canvas" width="900" height="700"></canvas>
                 <div class="opt-legend">
-                    <span><span class="swatch" style="background: linear-gradient(90deg,#0d1b2a,#fca311);"></span> Low → high loss</span>
+                    <span><span class="swatch loss-gradient-swatch"></span> Low → high loss</span>
                     <span>Paths &amp; dots: one color per selected optimizer</span>
                 </div>
             </div>
@@ -20,8 +20,8 @@
 
         <aside id="control-panel">
             <div class="opt-sidebar-header">
-                <h1>Optimizer landscape</h1>
-                <p class="lead">Enable optimizers below; each has its own η and options under <strong>Parameters</strong>. Metrics update next to each name. SGD / SGD+m use noisy gradients (∝ 1/√batch). <strong>Step once</strong> = one step per enabled runner; <strong>Run</strong> until all converge or max rounds. Click the plot to set θ₀ for everyone.</p>
+                <h1>2D Optimizer Simulation</h1>
+                <p class="lead">Each optimizer has its own η and settings in <strong>Parameters</strong>. Metrics appear beside each method. <strong>Step once</strong> advances one step per enabled runner; <strong>Run</strong> continues until convergence or max rounds. Click the plot to set θ₀ for all runners.</p>
             </div>
 
             <div class="opt-sidebar-scroll">
@@ -119,6 +119,10 @@
                                 <label>Learning rate η</label>
                                 <input type="number" data-field="lr" value="0.05" min="1e-6" max="10" step="any">
                             </div>
+                            <div class="control-group opt-method-inner">
+                                <label>Batch size</label>
+                                <input type="number" data-field="batch" value="4" min="1" max="256" step="1">
+                            </div>
                             <p class="hint">ε is in Advanced Settings (shared).</p>
                         </div>
                     </section>
@@ -137,6 +141,10 @@
                             <div class="control-group opt-method-inner">
                                 <label>Learning rate η</label>
                                 <input type="number" data-field="lr" value="0.05" min="1e-6" max="10" step="any">
+                            </div>
+                            <div class="control-group opt-method-inner">
+                                <label>Batch size</label>
+                                <input type="number" data-field="batch" value="4" min="1" max="256" step="1">
                             </div>
                             <div class="control-group opt-method-inner">
                                 <label>Decay ρ</label>
@@ -161,12 +169,18 @@
                                 <input type="number" data-field="lr" value="0.05" min="1e-6" max="10" step="any">
                             </div>
                             <div class="control-group opt-method-inner">
-                                <label>β₁</label>
-                                <input type="number" data-field="b1" value="0.9" min="0" max="0.999" step="0.001">
+                                <label>Batch size</label>
+                                <input type="number" data-field="batch" value="4" min="1" max="256" step="1">
                             </div>
-                            <div class="control-group opt-method-inner">
-                                <label>β₂</label>
-                                <input type="number" data-field="b2" value="0.999" min="0.9" max="0.9999" step="0.0001">
+                            <div class="opt-inline-pair">
+                                <div class="control-group opt-method-inner">
+                                    <label>β₁</label>
+                                    <input type="number" data-field="b1" value="0.9" min="0" max="0.999" step="0.001">
+                                </div>
+                                <div class="control-group opt-method-inner">
+                                    <label>β₂</label>
+                                    <input type="number" data-field="b2" value="0.999" min="0.9" max="0.9999" step="0.0001">
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -178,8 +192,8 @@
                     <input type="number" id="tol" value="0.01" min="1e-8" max="1" step="any">
                 </div>
                 <div class="control-group">
-                    <label for="runspeed">Run speed (steps/frame)</label>
-                    <input type="number" id="runspeed" value="8" min="1" max="200" step="1">
+                    <label for="runspeed">Run speed (steps/s)</label>
+                    <input type="number" id="runspeed" value="40" min="1" max="200" step="1">
                 </div>
 
                 <div class="control-group collapsible">
@@ -210,7 +224,7 @@
 
                 <div class="opt-rounds-display" id="opt-rounds-display">Rounds: 0</div>
                 <p class="global-status" id="global-status">Click the plot to set θ₀ for all enabled optimizers.</p>
-                <p class="note">SGD / SGD+m: true gradient + noise (not a dataset). ε for adaptive methods is under Advanced.</p>
+                <p class="note">All methods except GD use noisy gradients (not a dataset), with noise set by batch size. ε for adaptive methods is under Advanced.</p>
             </div>
 
             <div id="control-footer">

@@ -1,5 +1,5 @@
 /**
- * Optimizer landscape demo — analytic 2D losses and gradients.
+ * 2D Optimizer Simulation — analytic 2D losses and gradients.
  * Depends: (none)
  * Exposes: window.OptimizerLandscapes
  */

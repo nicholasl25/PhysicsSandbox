@@ -1,5 +1,5 @@
 /**
- * Optimizer landscape demo — DOM wiring, run loop, multi-runner compare state.
+ * 2D Optimizer Simulation — DOM wiring, run loop, multi-runner compare state.
  * Depends: OptimizerLandscapes, OptimizerCore, OptimizerRender
  */
 (function () {
@@ -52,6 +52,8 @@
         roundCount: 0,
         running: false,
         rafId: 0,
+        runAccumulator: 0,
+        lastFrameTs: 0,
         ui,
         canvas,
         getLand() {
@@ -80,9 +82,9 @@
         const lr = parseFloat(lrEl && lrEl.value);
         if (Number.isFinite(lr)) out.lr = lr;
 
-        if (kind === 'sgd' || kind === 'sgdm') {
-            const bEl = root.querySelector('[data-field="batch"]');
-            const b = parseInt(bEl && bEl.value, 10);
+        const bEl = root.querySelector('[data-field="batch"]');
+        if (bEl) {
+            const b = parseInt(bEl.value, 10);
             out.batch = Number.isFinite(b) ? Math.max(1, b) : 4;
         }
         if (kind === 'sgdm') {
@@ -142,6 +144,7 @@
             optState: Core.resetOptimizerState(),
             steps: 0,
             convergedStep: null,
+            diverged: false,
         }));
         app.roundCount = 0;
     }
@@ -173,6 +176,10 @@
                 el.textContent = '—';
                 return;
             }
+            if (runner.diverged) {
+                el.textContent = `steps ${runner.steps} · diverged`;
+                return;
+            }
             const Lv = L.loss(runner.theta[0], runner.theta[1]);
             const [gx, gy] = L.grad(runner.theta[0], runner.theta[1]);
             const gn = Math.hypot(gx, gy);
@@ -189,27 +196,28 @@
         app.running = false;
         if (app.rafId) cancelAnimationFrame(app.rafId);
         app.rafId = 0;
+        app.runAccumulator = 0;
+        app.lastFrameTs = 0;
     }
 
-    function allConverged() {
-        return app.runners.length > 0 && app.runners.every((r) => r.convergedStep !== null);
+    function allFinished() {
+        return app.runners.length > 0 && app.runners.every((r) => r.convergedStep !== null || r.diverged);
     }
 
     function stepAllRunners() {
         const tol = parseFloat(ui.tol.value);
-        let diverged = false;
-        let divergedLabel = '';
+        const divergedLabels = [];
         let stepped = false;
 
         for (let i = 0; i < app.runners.length; i++) {
             const r = app.runners[i];
-            if (r.convergedStep !== null) continue;
+            if (r.convergedStep !== null || r.diverged) continue;
             stepped = true;
             const gnorm = Core.stepRunner(r, app);
             if (!Number.isFinite(r.theta[0]) || !Number.isFinite(r.theta[1]) || !Number.isFinite(gnorm)) {
-                diverged = true;
-                divergedLabel = r.label;
-                break;
+                r.diverged = true;
+                divergedLabels.push(r.label);
+                continue;
             }
             if (gnorm < tol) {
                 r.convergedStep = r.steps;
@@ -219,9 +227,8 @@
         if (stepped) app.roundCount += 1;
 
         return {
-            diverged,
-            divergedLabel,
-            allConv: app.runners.length > 0 && app.runners.every((r) => r.convergedStep !== null),
+            divergedLabels,
+            allDone: allFinished(),
         };
     }
 
@@ -248,12 +255,19 @@
         setGlobalHint(DEFAULT_HINT);
     }
 
-    function runFrame() {
+    function runFrame(ts) {
         if (!app.running) return;
         const maxSteps = parseInt(ui.maxiter.value, 10) || 8000;
-        const perFrame = parseInt(ui.runspeed.value, 10) || 4;
+        const stepsPerSecond = Math.max(1, parseFloat(ui.runspeed.value) || 1);
+        const now = Number.isFinite(ts) ? ts : performance.now();
+        if (!app.lastFrameTs) app.lastFrameTs = now;
+        const dtSeconds = Math.max(0, Math.min(0.25, (now - app.lastFrameTs) / 1000));
+        app.lastFrameTs = now;
+        app.runAccumulator += dtSeconds * stepsPerSecond;
+        const stepsThisFrame = Math.floor(app.runAccumulator);
+        app.runAccumulator -= stepsThisFrame;
 
-        for (let k = 0; k < perFrame; k++) {
+        for (let k = 0; k < stepsThisFrame; k++) {
             if (app.roundCount >= maxSteps) {
                 pauseRun();
                 updateStatus();
@@ -261,26 +275,30 @@
                 draw();
                 return;
             }
-            if (allConverged()) {
+            if (allFinished()) {
                 pauseRun();
                 updateStatus();
-                setGlobalHint('All enabled optimizers converged (‖∇L‖ < tol).');
+                if (app.runners.some((r) => r.diverged)) {
+                    setGlobalHint('Run finished: some optimizers diverged; others converged or stopped.');
+                } else {
+                    setGlobalHint('All enabled optimizers converged (‖∇L‖ < tol).');
+                }
                 draw();
                 return;
             }
 
-            const { diverged, divergedLabel, allConv } = stepAllRunners();
-            if (diverged) {
-                pauseRun();
-                setGlobalHint(`Diverged (${divergedLabel}) — lower η or reset.`);
-                draw();
-                updateStatus();
-                return;
+            const { divergedLabels, allDone } = stepAllRunners();
+            if (divergedLabels.length > 0) {
+                setGlobalHint(`Diverged: ${divergedLabels.join(', ')} (continuing others).`);
             }
-            if (allConv) {
+            if (allDone) {
                 pauseRun();
                 updateStatus();
-                setGlobalHint('All enabled optimizers converged (‖∇L‖ < tol).');
+                if (app.runners.some((r) => r.diverged)) {
+                    setGlobalHint('Run finished: some optimizers diverged; others converged or stopped.');
+                } else {
+                    setGlobalHint('All enabled optimizers converged (‖∇L‖ < tol).');
+                }
                 draw();
                 return;
             }
@@ -365,16 +383,18 @@
 
         document.getElementById('btn-step').addEventListener('click', () => {
             pauseRun();
-            const { diverged, divergedLabel, allConv } = stepAllRunners();
-            if (diverged) {
-                setGlobalHint(`Diverged (${divergedLabel}) — lower η or reset.`);
-            } else {
-                updateStatus();
-                if (allConv) {
-                    setGlobalHint('All enabled optimizers converged (‖∇L‖ < tol).');
+            const { divergedLabels, allDone } = stepAllRunners();
+            updateStatus();
+            if (divergedLabels.length > 0) {
+                setGlobalHint(`Diverged: ${divergedLabels.join(', ')} (others can continue).`);
+            } else if (allDone) {
+                if (app.runners.some((r) => r.diverged)) {
+                    setGlobalHint('Run finished: some optimizers diverged; others converged or stopped.');
                 } else {
-                    setGlobalHint(DEFAULT_HINT);
+                    setGlobalHint('All enabled optimizers converged (‖∇L‖ < tol).');
                 }
+            } else {
+                setGlobalHint(DEFAULT_HINT);
             }
             draw();
         });
@@ -382,6 +402,8 @@
         document.getElementById('btn-run').addEventListener('click', () => {
             if (app.running) return;
             app.running = true;
+            app.runAccumulator = 0;
+            app.lastFrameTs = 0;
             setGlobalHint('Running…');
             app.rafId = requestAnimationFrame(runFrame);
         });

@@ -113,7 +113,14 @@ body {
     gap: 0.5rem;
 }
 
-.web-badge, .desktop-badge {
+.header-badges {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-left: auto;
+}
+
+.web-badge, .desktop-badge, .topic-badge {
     padding: 0.25rem 0.75rem;
     border-radius: 12px;
     font-size: 0.75rem;
@@ -129,6 +136,16 @@ body {
 
 .desktop-badge {
     background: #667eea;
+    color: white;
+}
+
+.physics-badge {
+    background: #f59e0b;
+    color: white;
+}
+
+.ml-badge {
+    background: #ef4444;
     color: white;
 }
 

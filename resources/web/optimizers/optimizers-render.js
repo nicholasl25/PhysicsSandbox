@@ -1,5 +1,5 @@
 /**
- * Optimizer landscape demo — heatmap, trajectories, world/canvas mapping.
+ * 2D Optimizer Simulation — heatmap, trajectories, world/canvas mapping.
  * Depends: (none)
  * Exposes: window.OptimizerRender
  */
@@ -31,18 +31,22 @@
         return `rgb(${r},${gch},${bch})`;
     }
 
+    function smoothstep01(t) {
+        const u = Math.max(0, Math.min(1, t));
+        return u * u * (3 - 2 * u);
+    }
+
     function heatColor(t) {
+        const s = smoothstep01(t);
         const stops = [
-            [13, 27, 42],
-            [30, 58, 95],
-            [65, 105, 225],
-            [34, 197, 94],
-            [252, 211, 77],
-            [251, 146, 60],
-            [239, 68, 68],
+            [68, 1, 84],
+            [59, 82, 139],
+            [33, 145, 140],
+            [94, 201, 98],
+            [253, 231, 37],
         ];
         const n = stops.length - 1;
-        const u = Math.max(0, Math.min(1, t)) * n;
+        const u = s * n;
         const i = Math.floor(u);
         const f = u - i;
         return lerpColor(f, stops[i], stops[Math.min(i + 1, n)]);
@@ -76,21 +80,26 @@
         }
         if (minL === maxL) maxL = minL + 1e-6;
 
-        gridCache = { key, w, h, minL, maxL, nx, ny, cellW, cellH, samples, bounds: b };
+        const logs = samples.map((v) => Math.log(v + 1e-9)).sort((a, b2) => a - b2);
+        const n = logs.length;
+        const lowIdx = Math.max(0, Math.floor(0.02 * (n - 1)));
+        const highIdx = Math.max(lowIdx + 1, Math.floor(0.98 * (n - 1)));
+        const logLow = logs[lowIdx];
+        const logHigh = logs[highIdx];
+
+        gridCache = { key, w, h, minL, maxL, nx, ny, cellW, cellH, samples, bounds: b, logLow, logHigh };
     }
 
     function drawHeatmap(ctx, w, h, landKey, getLand) {
         buildGrid(w, h, landKey, getLand);
         const g = gridCache;
-        const logMin = Math.log(g.minL + 1e-9);
-        const logMax = Math.log(g.maxL + 1e-9);
-        const span = logMax - logMin || 1;
+        const span = (g.logHigh - g.logLow) || 1;
 
         let idx = 0;
         for (let j = 0; j < g.ny; j++) {
             for (let i = 0; i < g.nx; i++) {
                 const l = g.samples[idx++];
-                const t = (Math.log(l + 1e-9) - logMin) / span;
+                const t = (Math.log(l + 1e-9) - g.logLow) / span;
                 ctx.fillStyle = heatColor(t);
                 ctx.fillRect(i * g.cellW, j * g.cellH, g.cellW + 1, g.cellH + 1);
             }
