@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimizer landscape — PhysicsSandbox</title>
+    <link rel="stylesheet" href="optimizers.css">
+</head>
+<body class="optimizer-sim-page">
+    <div id="app-container">
+        <div id="canvas-container">
+            <div id="opt-canvas-wrap">
+                <canvas id="opt-canvas" width="900" height="700"></canvas>
+                <div class="opt-legend">
+                    <span><span class="swatch" style="background: linear-gradient(90deg,#0d1b2a,#fca311);"></span> Low → high loss</span>
+                    <span>Paths &amp; dots: one color per selected optimizer</span>
+                </div>
+            </div>
+        </div>
+
+        <aside id="control-panel">
+            <div class="opt-sidebar-header">
+                <h1>Optimizer landscape</h1>
+                <p class="lead">Enable optimizers below; each has its own η and options under <strong>Parameters</strong>. Metrics update next to each name. SGD / SGD+m use noisy gradients (∝ 1/√batch). <strong>Step once</strong> = one step per enabled runner; <strong>Run</strong> until all converge or max rounds. Click the plot to set θ₀ for everyone.</p>
+            </div>
+
+            <div class="opt-sidebar-scroll">
+                <div class="opt-section-title">Parameters</div>
+
+                <div class="control-group">
+                    <label for="surface">Loss surface</label>
+                    <select id="surface">
+                        <option value="bowl">Bowl (quadratic)</option>
+                        <option value="valley">Elongated valley</option>
+                        <option value="rosen">Rosenbrock (banana)</option>
+                    </select>
+                </div>
+                <div class="opt-section-title">Optimizers</div>
+                <div class="optimizer-methods" id="optimizer-methods">
+
+                    <section class="opt-method" data-kind="gd">
+                        <div class="opt-method-top">
+                            <label class="opt-method-enable-wrap">
+                                <span class="opt-method-swatch" style="background:#22d3ee"></span>
+                                <input type="checkbox" class="opt-enable" data-kind="gd" checked>
+                                <span class="opt-method-title">Gradient descent</span>
+                            </label>
+                            <span class="opt-method-metrics" data-metrics="gd">—</span>
+                        </div>
+                        <button type="button" class="opt-method-toggle" aria-expanded="false" data-toggle="gd"><span class="opt-method-toggle-icon">▶</span> Parameters</button>
+                        <div class="opt-method-panel" hidden>
+                            <div class="control-group opt-method-inner">
+                                <label>Learning rate η</label>
+                                <input type="number" data-field="lr" value="0.05" min="1e-6" max="10" step="any">
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="opt-method" data-kind="sgd">
+                        <div class="opt-method-top">
+                            <label class="opt-method-enable-wrap">
+                                <span class="opt-method-swatch" style="background:#c084fc"></span>
+                                <input type="checkbox" class="opt-enable" data-kind="sgd" checked>
+                                <span class="opt-method-title">SGD (noisy)</span>
+                            </label>
+                            <span class="opt-method-metrics" data-metrics="sgd">—</span>
+                        </div>
+                        <button type="button" class="opt-method-toggle" aria-expanded="false" data-toggle="sgd"><span class="opt-method-toggle-icon">▶</span> Parameters</button>
+                        <div class="opt-method-panel" hidden>
+                            <div class="control-group opt-method-inner">
+                                <label>Learning rate η</label>
+                                <input type="number" data-field="lr" value="0.05" min="1e-6" max="10" step="any">
+                            </div>
+                            <div class="control-group opt-method-inner">
+                                <label>Batch size (noise ∝ 1/√batch)</label>
+                                <input type="number" data-field="batch" value="4" min="1" max="256" step="1">
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="opt-method" data-kind="sgdm">
+                        <div class="opt-method-top">
+                            <label class="opt-method-enable-wrap">
+                                <span class="opt-method-swatch" style="background:#f472b6"></span>
+                                <input type="checkbox" class="opt-enable" data-kind="sgdm" checked>
+                                <span class="opt-method-title">SGD + momentum</span>
+                            </label>
+                            <span class="opt-method-metrics" data-metrics="sgdm">—</span>
+                        </div>
+                        <button type="button" class="opt-method-toggle" aria-expanded="false" data-toggle="sgdm"><span class="opt-method-toggle-icon">▶</span> Parameters</button>
+                        <div class="opt-method-panel" hidden>
+                            <div class="control-group opt-method-inner">
+                                <label>Learning rate η</label>
+                                <input type="number" data-field="lr" value="0.05" min="1e-6" max="10" step="any">
+                            </div>
+                            <div class="control-group opt-method-inner">
+                                <label>Batch size</label>
+                                <input type="number" data-field="batch" value="4" min="1" max="256" step="1">
+                            </div>
+                            <div class="control-group opt-method-inner">
+                                <label>Momentum μ</label>
+                                <input type="number" data-field="momentum" value="0.9" min="0" max="0.999" step="0.01">
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="opt-method" data-kind="adagrad">
+                        <div class="opt-method-top">
+                            <label class="opt-method-enable-wrap">
+                                <span class="opt-method-swatch" style="background:#fbbf24"></span>
+                                <input type="checkbox" class="opt-enable" data-kind="adagrad" checked>
+                                <span class="opt-method-title">Adagrad</span>
+                            </label>
+                            <span class="opt-method-metrics" data-metrics="adagrad">—</span>
+                        </div>
+                        <button type="button" class="opt-method-toggle" aria-expanded="false" data-toggle="adagrad"><span class="opt-method-toggle-icon">▶</span> Parameters</button>
+                        <div class="opt-method-panel" hidden>
+                            <div class="control-group opt-method-inner">
+                                <label>Learning rate η</label>
+                                <input type="number" data-field="lr" value="0.05" min="1e-6" max="10" step="any">
+                            </div>
+                            <p class="hint">ε is in Advanced Settings (shared).</p>
+                        </div>
+                    </section>
+
+                    <section class="opt-method" data-kind="rmsprop">
+                        <div class="opt-method-top">
+                            <label class="opt-method-enable-wrap">
+                                <span class="opt-method-swatch" style="background:#4ade80"></span>
+                                <input type="checkbox" class="opt-enable" data-kind="rmsprop" checked>
+                                <span class="opt-method-title">RMSProp</span>
+                            </label>
+                            <span class="opt-method-metrics" data-metrics="rmsprop">—</span>
+                        </div>
+                        <button type="button" class="opt-method-toggle" aria-expanded="false" data-toggle="rmsprop"><span class="opt-method-toggle-icon">▶</span> Parameters</button>
+                        <div class="opt-method-panel" hidden>
+                            <div class="control-group opt-method-inner">
+                                <label>Learning rate η</label>
+                                <input type="number" data-field="lr" value="0.05" min="1e-6" max="10" step="any">
+                            </div>
+                            <div class="control-group opt-method-inner">
+                                <label>Decay ρ</label>
+                                <input type="number" data-field="rho" value="0.9" min="0" max="0.999" step="0.01">
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="opt-method" data-kind="adam">
+                        <div class="opt-method-top">
+                            <label class="opt-method-enable-wrap">
+                                <span class="opt-method-swatch" style="background:#fb923c"></span>
+                                <input type="checkbox" class="opt-enable" data-kind="adam" checked>
+                                <span class="opt-method-title">Adam</span>
+                            </label>
+                            <span class="opt-method-metrics" data-metrics="adam">—</span>
+                        </div>
+                        <button type="button" class="opt-method-toggle" aria-expanded="false" data-toggle="adam"><span class="opt-method-toggle-icon">▶</span> Parameters</button>
+                        <div class="opt-method-panel" hidden>
+                            <div class="control-group opt-method-inner">
+                                <label>Learning rate η</label>
+                                <input type="number" data-field="lr" value="0.05" min="1e-6" max="10" step="any">
+                            </div>
+                            <div class="control-group opt-method-inner">
+                                <label>β₁</label>
+                                <input type="number" data-field="b1" value="0.9" min="0" max="0.999" step="0.001">
+                            </div>
+                            <div class="control-group opt-method-inner">
+                                <label>β₂</label>
+                                <input type="number" data-field="b2" value="0.999" min="0.9" max="0.9999" step="0.0001">
+                            </div>
+                        </div>
+                    </section>
+
+                </div>
+
+                <div class="control-group">
+                    <label for="tol">Convergence ‖∇L‖ tol</label>
+                    <input type="number" id="tol" value="0.01" min="1e-8" max="1" step="any">
+                </div>
+                <div class="control-group">
+                    <label for="runspeed">Run speed (steps/frame)</label>
+                    <input type="number" id="runspeed" value="8" min="1" max="200" step="1">
+                </div>
+
+                <div class="control-group collapsible">
+                    <div class="collapsible-header" id="optimizer-advanced-header" role="button" tabindex="0">
+                        <span id="optimizer-advanced-label">▶ Advanced Settings</span>
+                    </div>
+                    <div class="collapsible-content" id="optimizer-advanced-content">
+                        <div class="control-group">
+                            <label for="eps">ε (denominator)</label>
+                            <input type="number" id="eps" value="1e-8" min="1e-12" max="1e-2" step="any">
+                        </div>
+                        <div class="control-group">
+                            <label for="maxiter">Max rounds (run)</label>
+                            <input type="number" id="maxiter" value="8000" min="100" max="200000" step="100">
+                            <p class="hint">Each round applies one step to every runner not yet converged.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="opt-btn-row">
+                    <button type="button" class="primary-button primary-button-step" id="btn-step">Step once</button>
+                    <button type="button" class="primary-button primary-button-run" id="btn-run">Run to convergence</button>
+                    <div class="row-inline">
+                        <button type="button" class="secondary-button" id="btn-pause">Pause</button>
+                        <button type="button" class="secondary-button" id="btn-reset">Reset path</button>
+                    </div>
+                </div>
+
+                <div class="opt-rounds-display" id="opt-rounds-display">Rounds: 0</div>
+                <p class="global-status" id="global-status">Click the plot to set θ₀ for all enabled optimizers.</p>
+                <p class="note">SGD / SGD+m: true gradient + noise (not a dataset). ε for adaptive methods is under Advanced.</p>
+            </div>
+
+            <div id="control-footer">
+                <a href="../index.html">← PhysicsSandbox home</a>
+            </div>
+        </aside>
+    </div>
+
+    <script src="optimizers-landscapes.js"></script>
+    <script src="optimizers-core.js"></script>
+    <script src="optimizers-render.js"></script>
+    <script src="optimizers-app.js"></script>
+</body>
+</html>

@@ -18,6 +18,12 @@ function toggleDropdown(id) {
     }
 }
 
+/** Browser-only sims: same navigation as each other (relative to hub URL, works on GitHub Pages project sites). */
+const WEB_SIMULATION_PATHS = {
+    gravity3d: 'gravity3d/gravity3d.html',
+    optimizer: 'optimizers/index.html',
+};
+
 function canLaunchDesktopSims() {
     const h = window.location.hostname;
     return h === 'localhost' || h === '127.0.0.1';
@@ -25,10 +31,9 @@ function canLaunchDesktopSims() {
 
 async function launchSimulation(type) {
     try {
-        // Gravity3D runs as a webapp, others launch Java
-        if (type === 'gravity3d') {
-            // Resolve against current URL so GitHub Pages project sites (/repo/) work (not root-absolute /gravity3d/…)
-            window.location.href = new URL('gravity3d/gravity3d.html', window.location.href).toString();
+        const webPath = WEB_SIMULATION_PATHS[type];
+        if (webPath) {
+            window.location.href = new URL(webPath, window.location.href).toString();
             return;
         }
         if (!canLaunchDesktopSims()) {

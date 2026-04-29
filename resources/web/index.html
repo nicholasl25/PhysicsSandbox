@@ -34,6 +34,22 @@
                     <a class="sim-button demos-button" href="gravity3d-demos.html" onclick="event.stopPropagation();">See demos</a>
                 </div>
             </div>
+
+            <div class="sim-card dropdown-card web-app">
+                <div class="dropdown-header" onclick="toggleDropdown('optimizer')">
+                    <h2>Optimizer landscape</h2>
+                    <span class="web-badge">Web</span>
+                    <span class="dropdown-arrow" id="optimizer-arrow">▼</span>
+                </div>
+                <ul class="dropdown-content" id="optimizer-content">
+                    <li>GD, SGD, SGD with momentum, Adagrad, RMSProp, Adam; compare several on the same surface</li>
+                    <li>Single steps or auto-run until ‖∇L‖ is below tolerance</li>
+                    <li>Quadratic bowl, elongated valley, and Rosenbrock banana surfaces</li>
+                </ul>
+                <div class="dropdown-options" id="optimizer-options">
+                    <button class="sim-button web-button" onclick="launchSimulation('optimizer'); event.stopPropagation();">Launch Optimizer Simulation</button>
+                </div>
+            </div>
             
             <!-- Desktop Applications Section -->
             <div class="section-header">
@@ -59,7 +75,7 @@
             
             <div class="sim-card dropdown-card desktop-app">
                 <div class="dropdown-header" onclick="toggleDropdown('blackhole')">
-                    <h2>Black Hole Simulator</h2>
+                    <h2>Black Hole Simulation</h2>
                     <span class="desktop-badge">Desktop</span>
                     <span class="dropdown-arrow" id="blackhole-arrow">▼</span>
                 </div>
@@ -69,7 +85,7 @@
                     <li>Visualization of gravitational lensing effects</li>
                 </ul>
                 <div class="dropdown-options" id="blackhole-options">
-                    <button class="sim-button desktop-button" onclick="launchSimulation('schwarzschild'); event.stopPropagation();">Launch Schwarzschild Simulator</button>
+                    <button class="sim-button desktop-button" onclick="launchSimulation('schwarzschild'); event.stopPropagation();">Launch Schwarzschild Simulation</button>
                 </div>
             </div>
         </div>

@@ -1,11 +1,11 @@
 # PhysicsSandbox
 
-A physics simulation platform featuring both web-based and desktop applications for exploring gravitational interactions and black hole physics.
+A physics simulation platform featuring web-based and desktop applications for gravitational dynamics, black-hole ray tracing, and an interactive optimizer landscape demo.
 
 ## Overview
 
 PhysicsSandbox includes:
-- **Web Applications**: Browser-based 3D gravity simulation (JavaScript/Three.js)
+- **Web Applications**: 3D gravity (JavaScript/Three.js) and a 2D optimizer landscape demo (Canvas)
 - **Desktop Applications**: Java-based 2D gravity and black hole simulations (Java Swing)
 
 ## Features
@@ -22,6 +22,11 @@ PhysicsSandbox includes:
 - **Adjustable Parameters**: Gravity constant, time factor, bounce mode
 - **No Installation Required**: Runs entirely in your browser
 
+### Optimizer landscape (Web)
+- **Synthetic losses**: Quadratic bowl, elongated valley, and Rosenbrock surfaces with a loss heatmap
+- **Methods**: GD, SGD, SGD with momentum, Adagrad, RMSProp, and Adam; enable several at once to compare paths and steps to convergence from the same start
+- **Controls**: Per-method learning rate and parameters in collapsible panels; step once or run until ‖∇L‖ is below tolerance; click the plot to set θ₀ for all active runners
+
 ### 2D Gravity Simulation (Desktop)
 - **Realistic Physics**: N-body gravitational simulation with collision detection
 - **Textured Rotating Planets**: Add planets with real NASA textures that rotate as they move
@@ -33,7 +38,7 @@ PhysicsSandbox includes:
 - **Stationary Masses**: Add immovable massive objects for interesting orbital dynamics
 - **Adjustable Gravity**: Real-time gravity constant slider (0-10000)
 
-### Black Hole Simulator (Desktop)
+### Black Hole Simulation (Desktop)
 - **Light Ray Geodesics**: Trajectories following curved spacetime in Schwarzschild metric
 - **Tensor Algebra Engine**: Einstein summation notation for general relativity calculations
 - **Visualization**: Gravitational lensing effects and event horizon visualization
@@ -47,7 +52,7 @@ PhysicsSandbox includes:
    ./run.sh
    ```
 2. Open your browser to `http://localhost:8080`
-3. Click "Launch 3D Simulation" under Web Applications
+3. Under **Web Applications**, click **Launch 3D Simulation** or **Launch Optimizer Simulation**
 
 ### Desktop Applications
 1. Start the web server:
@@ -69,9 +74,10 @@ The web application is self-contained and requires no backend server when deploy
 ## Technologies
 
 ### Web Application
-- **JavaScript/ES6**: Modern JavaScript for physics engine
-- **Three.js**: 3D graphics rendering with WebGL
-- **HTML5/CSS3**: Modern web interface
+- **JavaScript/ES6**: Modern JavaScript for physics and UI
+- **Three.js**: 3D graphics rendering with WebGL (gravity)
+- **Canvas 2D**: Heatmap and trajectories (optimizer demo)
+- **HTML5/CSS3**: Launch page and sim chrome
 
 ### Desktop Applications
 - **Java Swing**: Desktop GUI framework
@@ -99,17 +105,24 @@ Physics-/
 │   │   ├── index.html                # Launch page
 │   │   ├── app.js                    # Launch page logic
 │   │   ├── style.css                 # Launch page styling
-│   │   └── gravity3d/                # 3D Gravity web application
-│   │       ├── gravity3d.html        # Main HTML file
-│   │       ├── gravity3d-core.js     # Simulation core (state, init, CRUD, loop, API)
-│   │       ├── gravity3d-physics.js  # Gravity, radiation, collisions
-│   │       ├── gravity3d-render.js   # Camera, textures, meshes, markers, controls
-│   │       ├── gravity3d-controls.js # Add/Inspect/Settings UI
-│   │       ├── gravity3d.css         # Application styling
-│   │       └── physics/              # Physics engine (JavaScript)
-│   │           ├── Vector.js
-│   │           ├── State.js
-│   │           └── Planet.js
+│   │   ├── gravity3d/                # 3D Gravity web application
+│   │   │   ├── gravity3d.html        # Main HTML file
+│   │   │   ├── gravity3d-core.js     # Simulation core (state, init, CRUD, loop, API)
+│   │   │   ├── gravity3d-physics.js  # Gravity, radiation, collisions
+│   │   │   ├── gravity3d-render.js   # Camera, textures, meshes, markers, controls
+│   │   │   ├── gravity3d-controls.js # Add/Inspect/Settings UI
+│   │   │   ├── gravity3d.css         # Application styling
+│   │   │   └── physics/              # Physics engine (JavaScript)
+│   │   │       ├── Vector.js
+│   │   │       ├── State.js
+│   │   │       └── Planet.js
+│   │   └── optimizers/               # Optimizer landscape demo
+│   │       ├── index.html
+│   │       ├── optimizers.css
+│   │       ├── optimizers-landscapes.js
+│   │       ├── optimizers-core.js
+│   │       ├── optimizers-render.js
+│   │       └── optimizers-app.js
 │   └── textures/                     # Shared planet textures
 │
 ├── test/                             # Java unit tests (Maven)
