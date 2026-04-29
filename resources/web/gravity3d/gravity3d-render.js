@@ -8,12 +8,23 @@
     'use strict';
 
     Gravity3DSimulation.prototype.loadStarsBackground = function () {
-        this.textureLoader.load('/textures/Stars.png', (texture) => {
-            texture.mapping = THREE.EquirectangularReflectionMapping;
-            this.scene.background = texture;
-        }, undefined, (error) => {
-            console.warn('Could not load stars background:', error);
-        });
+        const candidates = (typeof resolveAssetCandidates === 'function')
+            ? resolveAssetCandidates('/textures/Stars.png')
+            : ['/textures/Stars.png'];
+        const tryLoad = (idx) => {
+            if (idx >= candidates.length) {
+                console.warn('Could not load stars background from any candidate path.');
+                return;
+            }
+            const url = candidates[idx];
+            this.textureLoader.load(url, (texture) => {
+                texture.mapping = THREE.EquirectangularReflectionMapping;
+                this.scene.background = texture;
+            }, undefined, () => {
+                tryLoad(idx + 1);
+            });
+        };
+        tryLoad(0);
     };
 
     Gravity3DSimulation.prototype.setupControls = function () {
@@ -121,19 +132,31 @@
     };
 
     Gravity3DSimulation.prototype.loadTexture = function (texturePath, callback) {
-        if (this.textureCache[texturePath]) {
-            callback(this.textureCache[texturePath]);
+        const candidates = (typeof resolveAssetCandidates === 'function')
+            ? resolveAssetCandidates(texturePath)
+            : [texturePath];
+        const cached = candidates.find((u) => this.textureCache[u]);
+        if (cached) {
+            callback(this.textureCache[cached]);
             return;
         }
-        this.textureLoader.load(texturePath, (texture) => {
-            texture.wrapS = THREE.RepeatWrapping;
-            texture.wrapT = THREE.RepeatWrapping;
-            this.textureCache[texturePath] = texture;
-            callback(texture);
-        }, undefined, (error) => {
-            console.warn('Could not load texture:', texturePath, error);
-            callback(null);
-        });
+        const tryLoad = (idx) => {
+            if (idx >= candidates.length) {
+                console.warn('Could not load texture from any candidate path:', texturePath);
+                callback(null);
+                return;
+            }
+            const url = candidates[idx];
+            this.textureLoader.load(url, (texture) => {
+                texture.wrapS = THREE.RepeatWrapping;
+                texture.wrapT = THREE.RepeatWrapping;
+                this.textureCache[url] = texture;
+                callback(texture);
+            }, undefined, () => {
+                tryLoad(idx + 1);
+            });
+        };
+        tryLoad(0);
     };
 
     Gravity3DSimulation.prototype.createGrayscaleTexture = function (threeTexture) {

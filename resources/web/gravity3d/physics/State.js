@@ -135,6 +135,8 @@ class State {
 
     /** Overrides the auto-assigned texture path. */
     setTexturepath(path) { this.texturepath = path; }
+    /** Alias for setTexturepath. */
+    setTexture(path) { this.setTexturepath(path); }
     /** Returns texture path string. */
     getTexturepath() {return this.texturepath; }
     /** Returns THREE.Color. */

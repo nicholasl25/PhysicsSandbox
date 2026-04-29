@@ -6,7 +6,7 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background-image: url('/textures/Mercury.jpg');
+    /* Background texture is set from index / demos via resolveAssetUrl (see asset-url.js). */
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
