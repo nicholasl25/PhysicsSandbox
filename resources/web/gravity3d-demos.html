@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="app-root" content="">
     <title>3D Gravity — demos</title>
-    <script src="asset-url.js"></script>
     <link rel="stylesheet" href="style.css">
     <style>
         .showcase-container h1 {
@@ -121,24 +119,5 @@
             </figure>
         </section>
     </div>
-    <script>
-        (function () {
-            var candidates = (typeof resolveAssetCandidates === 'function')
-                ? resolveAssetCandidates('/textures/Mercury.jpg')
-                : ['/textures/Mercury.jpg'];
-            var img = new Image();
-            var i = 0;
-            function tryNext() {
-                if (i >= candidates.length) return;
-                var u = candidates[i++];
-                img.onload = function () {
-                    document.body.style.backgroundImage = 'url("' + u.replace(/"/g, '%22') + '")';
-                };
-                img.onerror = tryNext;
-                img.src = u;
-            }
-            tryNext();
-        }());
-    </script>
 </body>
 </html>

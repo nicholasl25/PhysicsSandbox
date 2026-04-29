@@ -138,7 +138,7 @@ class Gravity3DSimulation {
         );
 
         if (planetData.texturePath) {
-            state.setTexturepath(planetData.texturePath);
+            state.setTexture(planetData.texturePath);
         }
 
         const planet = new Planet(
