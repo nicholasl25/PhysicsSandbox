@@ -8,7 +8,7 @@
     'use strict';
 
     Gravity3DSimulation.prototype.loadStarsBackground = function () {
-        this.textureLoader.load('/textures/Stars.png', (texture) => {
+        this.textureLoader.load('../textures/Stars.png', (texture) => {
             texture.mapping = THREE.EquirectangularReflectionMapping;
             this.scene.background = texture;
         }, undefined, (error) => {

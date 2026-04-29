@@ -4,28 +4,28 @@
     "mass": 1.9885e30,
     "radii": 6.957e8,
     "temp": 5778,
-    "texture": "/textures/Sun.jpg"
+    "texture": "../textures/Sun.jpg"
   },
   {
     "name": "Mercury",
     "mass": 3.3011e23,
     "radii": 2.4397e6,
     "temp": 440,
-    "texture": "/textures/Mercury.jpg"
+    "texture": "../textures/Mercury.jpg"
   },
   {
     "name": "Venus",
     "mass": 4.8675e24,
     "radii": 6.0518e6,
     "temp": 737,
-    "texture": "/textures/Venus.jpg"
+    "texture": "../textures/Venus.jpg"
   },
   {
     "name": "Earth",
     "mass": 5.97219e24,
     "radii": 6.371e6,
     "temp": 288,
-    "texture": "/textures/Earth.jpg"
+    "texture": "../textures/Earth.jpg"
   },
   {
     "name": "Moon",
@@ -39,35 +39,35 @@
     "mass": 6.4171e23,
     "radii": 3.3895e6,
     "temp": 210,
-    "texture": "/textures/Mars.jpg"
+    "texture": "../textures/Mars.jpg"
   },
   {
     "name": "Jupiter",
     "mass": 1.89813e27,
     "radii": 6.9911e7,
     "temp": 165,
-    "texture": "/textures/Jupiter.jpg"
+    "texture": "../textures/Jupiter.jpg"
   },
   {
     "name": "Saturn",
     "mass": 5.6834e26,
     "radii": 5.8232e7,
     "temp": 134,
-    "texture": "/textures/Saturn.jpg"
+    "texture": "../textures/Saturn.jpg"
   },
   {
     "name": "Uranus",
     "mass": 8.681e25,
     "radii": 2.5362e7,
     "temp": 76,
-    "texture": "/textures/Uranus.jpg"
+    "texture": "../textures/Uranus.jpg"
   },
   {
     "name": "Neptune",
     "mass": 1.02413e26,
     "radii": 2.4622e7,
     "temp": 72,
-    "texture": "/textures/Neptune.jpg"
+    "texture": "../textures/Neptune.jpg"
   },
   {
     "name": "Pluto",

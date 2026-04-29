@@ -8,6 +8,10 @@ class State {
     type = null;
     color = null;
 
+    static textureUrl(fileName) {
+        return `../textures/${fileName}`;
+    }
+
     /** @param {number} mass kg, @param {number} radius m, @param {number} temperature K */
     constructor(mass, radius, temperature, consts) {
         this.mass = mass;
@@ -19,28 +23,28 @@ class State {
         this.density = this.mass / this.volume;
 
         if (this.getSchwarzschildRadius() >= this.radius) {
-            this.texturepath = '/textures/Blackhole.jpg';
+            this.texturepath = State.textureUrl('Blackhole.jpg');
             this.type = PlanetTypes.BLACKHOLE;
             this.radius = this.getSchwarzschildRadius();
             this.heatcap = 0;
         }
         
         else if (this.temperature >= 2000) {
-            this.texturepath = '/textures/Sun.jpg';
+            this.texturepath = State.textureUrl('Sun.jpg');
             this.type = PlanetTypes.STAR;
             this.color = this.temperatureToColor();
             this.heatcap = 1e4; // Approx heat capacity for H/He mix
         }
 
         else if (this.density >= 2000) {
-            this.texturepath = '/textures/Mercury.jpg';
+            this.texturepath = State.textureUrl('Mercury.jpg');
             this.type = PlanetTypes.ROCKY;
             this.color = new THREE.Color(1, 1, 1);
             this.heatcap = 8e2 // Approx heatcap for solid rocky object
         }
 
         else {
-            this.texturepath = '/textures/Jupiter.jpg';
+            this.texturepath = State.textureUrl('Jupiter.jpg');
             this.type = PlanetTypes.GAS;
             this.color = new THREE.Color(1, 1, 1);
             this.heatcap = 1e4; // Approx heat capacity for H/He mix

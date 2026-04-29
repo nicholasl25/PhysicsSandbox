@@ -28,6 +28,7 @@ jobs:
         run: |
           mkdir -p _site
           cp -r resources/web/. _site/
+          cp -r resources/textures _site/textures
           if [ -d demos ]; then cp -r demos _site/demos; fi
 
       - name: Upload Pages artifact
