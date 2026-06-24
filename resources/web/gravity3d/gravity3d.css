@@ -380,10 +380,48 @@ body {
 .inspect-fields .row {
     display: flex;
     justify-content: space-between;
+    align-items: center;
+    gap: 8px;
     padding: 4px 0;
     border-bottom: 1px solid #3a3a3a;
 }
-.inspect-fields .row span:first-child { color: #888; }
+.inspect-fields .row span:first-child {
+    color: #888;
+    flex-shrink: 0;
+}
+.inspect-fields .row .inspect-value {
+    min-width: 0;
+    flex: 1;
+    text-align: right;
+    word-break: break-all;
+}
+.inspect-value-editable {
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 2px;
+}
+.inspect-value-editable:hover {
+    color: #e8e8ff;
+}
+.inspect-inline-input {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 4px 6px;
+    font-size: 12px;
+    font-family: inherit;
+    color: #eee;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid var(--accent, #667eea);
+    border-radius: 4px;
+}
+.inspect-inline-input:focus {
+    outline: none;
+    border-color: #8b9df5;
+    box-shadow: 0 0 0 1px rgba(102, 126, 234, 0.35);
+}
 .inspect-list-wrap {
     max-height: 280px;
     overflow-y: auto;
